@@ -1,0 +1,95 @@
+name: Automated Security Pipeline
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  static_analysis:
+    name: SAST with Semgrep
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write # Required for uploading SARIF results to GitHub
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run Semgrep scan
+        id: semgrep
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: auto # Use Semgrep's automatic configuration
+          output-format: sarif
+        continue-on-error: true # Do not fail the build for findings
+
+      - name: Upload SAST results
+        uses: github/code-scanning/upload-sarif@v3
+        with:
+          sarif_file: semgrep-results.sarif
+
+  dynamic_and_behavioral_analysis:
+    name: DAST with OWASP ZAP and Sandbox
+    runs-on: ubuntu-latest
+    needs: [static_analysis] # This job depends on a successful SAST scan
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build and spin up the vulnerable web application
+        run: docker-compose up -d --build
+
+      - name: Create isolated network for sandbox
+        run: docker network create zapnet
+
+      - name: Run ZAP automated scan in a container
+        uses: docker://owasp/zap-stable
+        with:
+          args: zap-full-scan.py -t http://webgoat:8080 -r zap_report.html
+        env:
+          ZAP_API_KEY: ${{ secrets.ZAP_API_KEY }}
+
+      - name: Get DAST Report
+        run: docker cp zap-stable:/zap/wrk/zap_report.html./dast_report.html
+
+  report_aggregation:
+    name: Consolidate and Generate Final Report
+    runs-on: ubuntu-latest
+    needs: [static_analysis, dynamic_and_behavioral_analysis]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download all reports
+        uses: actions/download-artifact@v3
+        with:
+          path: reports
+
+      - name: Combine reports with custom script
+        run: |
+          # This is a placeholder for a custom Python or Bash script that:
+          # 1. Parses semgrep-results.sarif
+          # 2. Parses the ZAP report (e.g., JSON or XML)
+          # 3. Normalizes the findings into a common format
+          # 4. Generates a final, consolidated report (e.g., a markdown file)
+
+          echo "## Final Consolidated Security Report" > final_report.md
+          echo "" >> final_report.md
+          echo "This report combines findings from multiple security scans." >> final_report.md
+          echo "" >> final_report.md
+          echo "| Finding ID | Source Tool | Description | Severity | Remediation |" >> final_report.md
+          echo "|---|---|---|---|---|" >> final_report.md
+          echo "| SEC-001 | Semgrep | Hard-coded secrets found in source code. | High | Use a secrets manager. |" >> final_report.md
+          echo "| DAST-001 | OWASP ZAP | SQL Injection vulnerability found at `/login`. | Critical | Implement input validation. |" >> final_report.md
+          echo "| BEH-001 | Cuckoo Sandbox | Attempt to connect to unknown IP during execution. | Critical | Investigate malicious dependency. |" >> final_report.md
+
+      - name: Upload Final Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: final-security-report
+          path: final_report.md
