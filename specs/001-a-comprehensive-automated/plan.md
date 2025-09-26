@@ -30,7 +30,7 @@
 - Phase 3-4: Implementation execution (manual or via tools)
 
 ## Summary
-[Extract from feature spec: primary requirement + technical approach from research]
+Comprehensive, offline-capable security scanning workflow orchestrating SAST (Semgrep), SCA (Trivy, OSV-Scanner), and DAST (OWASP ZAP) in isolated Podman containers, ingesting a list of Git repositories and producing a consolidated Markdown report.
 
 ## Technical Context
 **Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
@@ -46,7 +46,18 @@
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+All gates satisfied for this implementation phase; containers run rootless, network-restricted, and with seccomp profiles. No violations identified.
+
+## Requirements Coverage (Traceability)
+- FR-001 Input list: `src/main.py` (projects.json loader) and examples in README/quickstart
+- FR-002 Multi-language: `.semgrep.yml` includes Python, JS/TS, Java, Go, Ruby, C#, PHP
+- FR-003 SAST: `SemgrepRunner`
+- FR-004 DAST: `ZapRunner`
+- FR-005 Sandbox: All runners use Podman with network/permissions isolation
+- FR-006 Lifecycle: Runners create/destroy containers; `Workflow` manages temp dirs
+- FR-007 Consolidated report: `src/reporting/report.py` with template
+- FR-008 Pretty report: Markdown template `templates/report.md`
+- FR-009 MIT license: `LICENSE`
 
 ## Project Structure
 
@@ -224,7 +235,7 @@ ios/ or android/
 A self-contained, offline software assurance toolkit designed to run on a Linux host (e.g., Fedora/Opensuse). The workflow ingests a list of open-source Git repositories for a two-phase analysis.
 
 **Phase 1: Static Analysis**
-- Orchestrate a suite of open-source static analysis (SAST) and software composition analysis (SCA) tools.
+- Orchestrate a suite of open-source static analysis (SAST) and software composition analysis (SCA) tools, with each tool running in a dedicated, rootless Podman container.
 - **Tools**:
     - **Semgrep**: For customizable code pattern analysis.
     - **Aqua Security's Trivy**: For broad dependency and secret scanning.

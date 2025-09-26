@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://semgrep.dev/docs/config-schema
+# Comprehensive Semgrep configuration for the GeoToolKit project.
+# This configuration aims for broad coverage across multiple languages and security standards,
+# using open-source rulesets from the Semgrep registry.
+
+rules:
+  # =================================================================
+  # 1. Foundational Security Rulesets
+  # =================================================================
+
+  # A comprehensive ruleset for finding hardcoded secrets. This is critical for
+  # preventing accidental exposure of credentials for git, cloud providers, etc.
+  - p/secrets
+
+  # The CI ruleset includes checks for security best practices in CI/CD environments.
+  - p/ci
+
+  # =================================================================
+  # 2. Language-Specific Rulesets
+  # =================================================================
+  # Rules for languages that might be present in the project or its dependencies.
+
+  # Python
+  - p/python
+  - p/fastapi
+  - p/pip
+
+  # JavaScript / TypeScript
+  - p/javascript
+  - p/typescript
+  - p/nodejs
+  - p/react
+
+  # Go
+  - p/golang
+
+  # Java
+  - p/java
+
+  # Ruby
+  - p/ruby
+
+  # C# / .NET
+  - p/csharp
+
+  # PHP
+  - p/php
+
+  # Infrastructure as Code & Configuration Files
+  - p/dockerfile
+  - p/terraform
+  - p/kubernetes
+  - p/yaml
+  - p/json
+
+  # =================================================================
+  # 3. Security Standards & Frameworks
+  # =================================================================
+
+  # OWASP Top 10
+  # Ruleset covering the OWASP Top 10 web application security risks.
+  - p/owasp-top-ten
+
+  # OWASP Application Security Verification Standard (ASVS)
+  # Level 1 is the minimum standard for all applications. For more stringent
+  # requirements, consider using p/owasp-asvs-l2 or p/owasp-asvs-l3.
+  - p/owasp-asvs-l1
+
+  # =================================================================
+  # 4. Vulnerability Class Rulesets
+  # =================================================================
+  # Focused rulesets for common and high-impact vulnerability classes.
+
+  # Cross-Site Scripting (XSS)
+  - p/xss
+
+  # SQL Injection (SQLi)
+  - p/sqli
+
+  # Server-Side Request Forgery (SSRF)
+  - p/ssrf
+
+  # Insecure Transport (e.g., plain HTTP)
+  - p/insecure-transport
+
+  # Common Security Misconfigurations
+  - p/security-misconfiguration

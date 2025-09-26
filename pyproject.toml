@@ -1,5 +1,5 @@
 [project]
-name = "python_template"
+name = "geotoolkit"
 version = "0.1.0"
 description = "A simple FastAPI Python template with Uv"
 readme = "README.md"
@@ -12,6 +12,9 @@ dependencies = [
     "swagger-ui>=0.1.2",
     "uvicorn[standard]>=0.34.0",
     "waitress>=3.0.2",
+    "Jinja2>=3.1.4",
+    "requests>=2.32.3",
+    "gitpython>=3.1.0",
 ]
 classifiers = [
     "Programming Language :: Python :: 3.11",
@@ -29,7 +32,7 @@ build-backend = "hatchling.build"
 package = true
 
 [project.scripts]
-python_template = "python_template.main:main"
+geotoolkit = "src.main:main"
 
 [project.optional-dependencies]
 dev = [
@@ -44,15 +47,16 @@ test = [
     "mypy>=1.6.0",
     "pytest>=7.3.1",
     "pytest-cov>=4.1.0",
+    "requests>=2.32.3",
 ]
 
 [tool.hatch.build]
-artifact-name = "python_template-{version}"
-packages = ["src/python_template"]
+artifact-name = "geotoolkit-{version}"
+packages = ["src"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "src/python_template/templates/hello.html",
+    "src/reporting/templates/report.md",
     "tests",
 ]
 
@@ -65,10 +69,10 @@ dependencies = [
     "types-waitress"
 ]
 [tool.hatch.envs.default.scripts]
-test = "pytest --cov=src/python_template tests"
+test = "pytest --cov=src tests"
 lint = "ruff check src tests pyproject.toml && mypy src tests"
 format = "ruff format src tests pyproject.toml"
-run = "uvicorn python_template:app --reload"
+run = "uvicorn src.main:app --reload"
 clean = "rm -rf .coverage .pytest_cache dist build"
 
 [tool.ruff.lint]
@@ -92,8 +96,8 @@ strict = true
 
 [tool.coverage.run]
 branch = true
-source = ["src/python_template"]
-omit = ["src/python_template/templates/*"] 
+source = ["src"]
+omit = ["src/reporting/templates/*"] 
 
 [tool.coverage.paths]
-source = ["src/python_template"]
+source = ["src"]

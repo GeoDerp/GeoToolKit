@@ -15,8 +15,8 @@ USER root
 
 # Check for package update
 RUN dnf -y update-minimal --security --sec-severity=Important --sec-severity=Critical && \
-    # Install git, nano
-    dnf install git nano  -y; \
+    # Install git, nano, podman
+    dnf install git nano podman -y; \
     # clear cache
     dnf clean all
 
@@ -35,9 +35,21 @@ RUN uv tool install ruff@latest
 FROM base AS dev
 COPY .devcontainer/devtools.sh /tmp/devtools.sh
 # Install extra dev tools as root, then run as default user
-RUN chmod +x /tmp/devtools.sh && /tmp/devtools.sh  
+RUN chmod +x /tmp/devtools.sh && /tmp/devtools.sh
 USER ${USER_NAME}
 WORKDIR ${HOME}
+
+# Test target
+FROM base AS test
+WORKDIR ${APP}
+COPY . . 
+RUN chown -R ${USER_NAME}:${USER_NAME} ${APP} && \
+    uv venv && \
+    source .venv/bin/activate && \
+    uv pip install .[test]
+USER ${USER_NAME}
+RUN mkdir -p ${HOME}/.config && chown -R ${USER_NAME}:${USER_NAME} ${HOME}/.config
+CMD ["sh", "-c", "source .venv/bin/activate && pytest tests/"]
 
 # DEPLOYMENT EXAMPLE:
 #-----------------------------

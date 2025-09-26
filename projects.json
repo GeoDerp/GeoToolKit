@@ -1,0 +1,52 @@
+{
+  "projects": [
+    {
+      "url": "https://github.com/microsoft/vscode-python",
+      "name": "vscode-python",
+      "language": "TypeScript/Python",
+      "description": "Python extension for Visual Studio Code"
+    },
+    {
+      "url": "https://github.com/fastapi/fastapi",
+      "name": "fastapi",
+      "language": "Python",
+      "description": "Modern, fast web framework for building APIs with Python"
+    },
+    {
+      "url": "https://github.com/spring-projects/spring-boot",
+      "name": "spring-boot",
+      "language": "Java",
+      "description": "Java-based framework for building production-ready applications"
+    },
+    {
+      "url": "https://github.com/expressjs/express",
+      "name": "express",
+      "language": "JavaScript",
+      "description": "Fast, unopinionated, minimalist web framework for Node.js"
+    },
+    {
+      "url": "https://github.com/gin-gonic/gin",
+      "name": "gin",
+      "language": "Go",
+      "description": "HTTP web framework written in Go"
+    },
+    {
+      "url": "https://github.com/rails/rails",
+      "name": "rails",
+      "language": "Ruby",
+      "description": "Ruby on Rails web application framework"
+    },
+    {
+      "url": "https://github.com/dotnet/core",
+      "name": "dotnet-core",
+      "language": "C#",
+      "description": ".NET Core runtime and libraries"
+    },
+    {
+      "url": "https://github.com/laravel/laravel",
+      "name": "laravel",
+      "language": "PHP",
+      "description": "PHP web application framework"
+    }
+  ]
+}

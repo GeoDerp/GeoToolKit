@@ -1,0 +1,34 @@
+{
+    "defaultAction": "SCMP_ACT_ERRNO",
+    "defaultErrnoRet": 38,
+    "defaultErrno": "ENOSYS",
+    "archMap": [
+        {
+            "architecture": "SCMP_ARCH_X86_64",
+            "subArchitectures": ["SCMP_ARCH_X86", "SCMP_ARCH_X32"]
+        },
+        {
+            "architecture": "SCMP_ARCH_AARCH64",
+            "subArchitectures": ["SCMP_ARCH_ARM"]
+        }
+    ],
+    "syscalls": [
+        {
+            "names": [
+                "access", "arch_prctl", "bind", "brk", "capget", "chdir", "chmod", "chown",
+                "clone", "close", "connect", "creat", "dup", "dup2", "epoll_create", "epoll_ctl",
+                "epoll_wait", "execve", "exit", "exit_group", "fchdir", "fchmod", "fchown", "fcntl",
+                "fstat", "fstatfs", "futex", "getcwd", "getdents", "getegid", "geteuid", "getgid",
+                "getgroups", "getpgrp", "getpid", "getppid", "getrlimit", "getrusage", "getsid",
+                "gettid", "getuid", "ioctl", "kill", "lseek", "listen", "lstat", "madvise", "mkdir",
+                "mmap", "mprotect", "munmap", "nanosleep", "open", "openat", "pipe", "poll", "prctl",
+                "read", "readlink", "recvfrom", "rename", "rt_sigaction", "rt_sigprocmask", "rt_sigreturn",
+                "sched_getaffinity", "select", "sendto", "set_robust_list", "set_tid_address",
+                "setgid", "setgroups", "setrlimit", "setsid", "setuid", "socket", "stat", "statfs",
+                "symlink", "tgkill", "time", "times", "umask", "unlink", "utimensat", "wait4",
+                "write"
+            ],
+            "action": "SCMP_ACT_ALLOW"
+        }
+    ]
+}

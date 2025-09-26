@@ -26,13 +26,16 @@ As a security auditor, I want to provide a list of open-source projects and rece
 
 ### Functional Requirements
 - **FR-001**: The system MUST accept a list of open-source project identifiers (e.g., repository URLs).
-- **FR-002**: The system MUST support scanning projects from major programming languages. [NEEDS CLARIFICATION: Which specific languages are considered "major"?]
+- **FR-002**: The system MUST support scanning projects from major programming languages.
+	- Major languages for this feature include: Python, JavaScript, TypeScript, Java, Go, Ruby, C#, and PHP.
 - **FR-003**: The system MUST perform Static Application Security Testing (SAST) on the source code.
 - **FR-004**: The system MUST perform Dynamic Application Security Testing (DAST) on the running application.
 - **FR-005**: All dynamic tests MUST be executed within a temporary, isolated sandbox environment (e.g., container or VM).
 - **FR-006**: The sandbox environment MUST be automatically created before the DAST scan and destroyed after.
 - **FR-007**: The system MUST generate a consolidated report summarizing the findings from all scans.
-- **FR-008**: The report MUST be "pritty" (well-formatted and easy to read). [NEEDS CLARIFICATION: What format should the report be in? (e.g., HTML, PDF, Markdown)]
+- **FR-008**: The report MUST be well-formatted and easy to read.
+	- Primary format: Markdown (.md)
+	- Optional export: JSON for machine consumption (non-blocking for this feature)
 - **FR-009**: The entire workflow script and its components MUST be licensed under the MIT license.
 
 ### Key Entities *(include if feature involves data)*
@@ -52,7 +55,7 @@ As a security auditor, I want to provide a list of open-source projects and rece
 - [X] All mandatory sections completed
 
 ### Requirement Completeness
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [X] No [NEEDS CLARIFICATION] markers remain
 - [X] Requirements are testable and unambiguous  
 - [X] Success criteria are measurable
 - [X] Scope is clearly bounded

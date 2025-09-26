@@ -1,0 +1,22 @@
+{
+  "projects": [
+    {
+      "url": "https://github.com/gin-gonic/gin",
+      "name": "gin",
+      "language": "Go",
+      "description": "HTTP web framework written in Go"
+    },
+    {
+      "url": "https://github.com/expressjs/express",
+      "name": "express",
+      "language": "JavaScript",
+      "description": "Fast, unopinionated, minimalist web framework for Node.js"
+    },
+    {
+      "url": "https://github.com/spring-projects/spring-boot",
+      "name": "spring-boot",
+      "language": "Java",
+      "description": "Java-based framework for building production-ready applications"
+    }
+  ]
+}

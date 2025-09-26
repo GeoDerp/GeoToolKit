@@ -1,0 +1,16 @@
+{
+  "projects": [
+    {
+      "url": "https://github.com/fastapi/fastapi",
+      "name": "fastapi",
+      "language": "Python",
+      "description": "Modern, fast web framework for building APIs with Python"
+    },
+    {
+      "url": "https://github.com/gin-gonic/gin",
+      "name": "gin",
+      "language": "Go", 
+      "description": "HTTP web framework written in Go"
+    }
+  ]
+}

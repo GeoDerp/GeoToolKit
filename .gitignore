@@ -1,3 +1,62 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Packaging / build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+coverage/
+htmlcov/
+.cache/
+
+# Type checking / lint caches
+.mypy_cache/
+.pyre/
+.pytype/
+.ruff_cache/
+
+# Editors / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS / misc
+.DS_Store
+
+# Local data bundles and archives (keep tracked fixtures like mock-db.json)
+data/offline-db.tar.gz
+data/*.json.gz
+data/*.zip
+!data/mock-db.json
+
+# Temporary dirs/files
+temp_test/
+tmp/
+*.tmp
+
+# Semgrep cache (if created locally)
+.semgrep_cache/
+
+# Example/generated reports
+validation-report.md
+multi-language-report.md
+quick-report.md
+security-report.md
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

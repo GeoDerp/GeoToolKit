@@ -11,15 +11,13 @@ enabled=1
 gpgkey=https://aquasecurity.github.io/trivy-repo/rpm/public.key
 EOF
 
-# Install Lefthook repo
-curl -1sLf 'https://dl.cloudsmith.io/public/evilmartians/lefthook/setup.rpm.sh' | bash
-
 # Install Specify CLI
 uv tool install --from git+https://github.com/github/spec-kit.git specify-cli
 
 dnf -y update-minimal --security --sec-severity=Important --sec-severity=Critical && \
-# Install Lefthook
-dnf install lefthook -y; \
+
+# Install podman
+dnf -y install podman && \
 # Install python for Semgrep, Install gnupg2 for GPG pass-through
 # For ssh git support, uncomment `AllowAgentForwarding yes` in /etc/ssh/sshd_config on your host 
 dnf install python3 python3-pip gnupg2 -y; \

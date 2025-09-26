@@ -2,9 +2,10 @@
 
 ## 1. Prerequisites
 
-- A Linux host (e.g., Fedora, Opensuse).
-- Podman installed.
-- The offline vulnerability database package.
+- Linux host (Fedora, openSUSE, Ubuntu)
+- Podman installed and able to pull container images (semgrep/semgrep, aquasec/trivy, ghcr.io/ossf/osv-scanner, owasp/zap2docker-stable)
+- Python 3.11+
+- Optional: offline vulnerability database package (for air-gapped use)
 
 ## 2. Installation
 
@@ -16,7 +17,11 @@
    ```bash
    cd GeoToolKit
    ```
-3. Place the offline vulnerability database package in the `data/` directory.
+3. Place the offline vulnerability database package in the `data/` directory (optional):
+  ```fish
+  mkdir -p data
+  # Place your offline-db tarball here
+  ```
 
 ## 3. Usage
 
@@ -25,17 +30,23 @@
    {
      "projects": [
        {
-         "url": "https://github.com/example/project1"
+         "url": "https://github.com/fastapi/fastapi",
+         "name": "fastapi",
+         "language": "Python",
+         "description": "Modern, fast web framework for building APIs with Python"
        },
        {
-         "url": "https://github.com/example/project2"
+         "url": "https://github.com/gin-gonic/gin",
+         "name": "gin",
+         "language": "Go",
+         "description": "HTTP web framework written in Go"
        }
      ]
    }
    ```
 2. Run the scanner:
-   ```bash
-   ./scan.sh --input projects.json --output report.md --database-path data/offline-db.tar.gz
+   ```fish
+   python src/main.py --input projects.json --output report.md --database-path data/offline-db.tar.gz
    ```
 3. The report will be generated at `report.md`.
 
@@ -52,6 +63,6 @@ database.example.com:5432
 
 Then, pass the path to this file to the scanner:
 
-```bash
-./scan.sh --input projects.json --output report.md --database-path data/offline-db.tar.gz --network-allowlist network-allowlist.txt
+```fish
+python src/main.py --input projects.json --output report.md --database-path data/offline-db.tar.gz --network-allowlist network-allowlist.txt
 ```

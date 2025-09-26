@@ -17,9 +17,8 @@
 	//may be needed for Podman
 	"runArgs": [
 		"--userns=keep-id",
-		"--pid=host"
+		"--security-opt=label=disable"
 	],
-
 
 	"customizations": {
 		"vscode": {
@@ -44,7 +43,7 @@
 		],
 		  "settings": {
 			"[python]": {
-			  "editor.defaultFormatter": "charliermarsh.ruff",
+			  "editor.defaultFormatter": "charliermarsh.ruff"
 			},
 			 "editor.tabSize": 4,
 			 "workbench.tree.indent": 14,
@@ -55,6 +54,5 @@
 		}
 	  },
 
-	"postCreateCommand": [ "uv", "venv" ]
-	  
+	"postCreateCommand": "uv venv"
 }
