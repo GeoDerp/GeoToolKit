@@ -1,14 +1,14 @@
-import pytest
-from unittest.mock import patch, MagicMock
-from src.orchestration.runners.zap_runner import ZapRunner
-from src.models.finding import Finding
-import requests
 import json
+from unittest.mock import MagicMock, patch
+
+import requests
+from src.models.finding import Finding
+from src.orchestration.runners.zap_runner import ZapRunner
 
 # Mock ZAP API responses for successful scan
 MOCK_ZAP_SPIDER_STATUS_COMPLETE = '{"status": "100"}'
 MOCK_ZAP_ASCAN_STATUS_COMPLETE = '{"status": "100"}'
-MOCK_ZAP_ALERTS_OUTPUT = '''
+MOCK_ZAP_ALERTS_OUTPUT = """
 {
   "alerts": [
     {
@@ -26,7 +26,8 @@ MOCK_ZAP_ALERTS_OUTPUT = '''
     }
   ]
 }
-'''
+"""
+
 
 def mock_requests_get(*args, **kwargs):
     url = args[0]
@@ -57,8 +58,11 @@ def mock_requests_get(*args, **kwargs):
         return mock_response
     raise requests.exceptions.RequestException(f"Unexpected URL: {url}")
 
+
 def test_zap_runner_success():
-    with patch('requests.get', side_effect=mock_requests_get) as mock_requests_get_patch:
+    with patch(
+        "requests.get", side_effect=mock_requests_get
+    ) as mock_requests_get_patch:
         findings = ZapRunner.run_scan("http://localhost:8080/target")
 
         assert len(findings) == 1
@@ -69,21 +73,29 @@ def test_zap_runner_success():
         assert findings[0].filePath == "http://localhost:8080/test?param=value"
         assert "CWE-79" in findings[0].complianceMappings
 
+
 def test_zap_runner_connection_error(capsys):
-    with patch('requests.get', side_effect=requests.exceptions.ConnectionError) as mock_requests_get_patch:
+    with patch(
+        "requests.get", side_effect=requests.exceptions.ConnectionError
+    ) as mock_requests_get_patch:
         findings = ZapRunner.run_scan("http://localhost:8080/target")
 
         assert len(findings) == 0
         captured = capsys.readouterr()
         assert "Error: Could not connect to ZAP" in captured.out
 
+
 def test_zap_runner_request_exception(capsys):
-    with patch('requests.get', side_effect=requests.exceptions.RequestException("Test Request Error")) as mock_requests_get_patch:
+    with patch(
+        "requests.get",
+        side_effect=requests.exceptions.RequestException("Test Request Error"),
+    ) as mock_requests_get_patch:
         findings = ZapRunner.run_scan("http://localhost:8080/target")
 
         assert len(findings) == 0
         captured = capsys.readouterr()
         assert "Error interacting with ZAP API: Test Request Error" in captured.out
+
 
 def test_zap_runner_json_decode_error(capsys):
     def mock_invalid_json_response(*args, **kwargs):
@@ -92,7 +104,9 @@ def test_zap_runner_json_decode_error(capsys):
         mock_response.raise_for_status.return_value = None
         return mock_response
 
-    with patch('requests.get', side_effect=mock_invalid_json_response) as mock_requests_get_patch:
+    with patch(
+        "requests.get", side_effect=mock_invalid_json_response
+    ) as mock_requests_get_patch:
         findings = ZapRunner.run_scan("http://localhost:8080/target")
 
         assert len(findings) == 0

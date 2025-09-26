@@ -1,10 +1,15 @@
-import pytest
-import json
-from src.orchestration.parser import OutputParser
+"""Unit tests for the OutputParser module.
+
+Tests parsing of different security tool outputs including Semgrep, Trivy,
+OSV-Scanner, and OWASP ZAP. Each test validates that the parser correctly
+extracts findings from tool-specific JSON output formats.
+"""
+
 from src.models.finding import Finding
+from src.orchestration.parser import OutputParser
 
 # Mock JSON outputs for each tool
-MOCK_SEMGREP_JSON = '''
+MOCK_SEMGREP_JSON = """
 {
   "results": [
     {
@@ -29,9 +34,9 @@ MOCK_SEMGREP_JSON = '''
     }
   ]
 }
-'''
+"""
 
-MOCK_TRIVY_JSON = '''
+MOCK_TRIVY_JSON = """
 {
   "Results": [
     {
@@ -59,9 +64,9 @@ MOCK_TRIVY_JSON = '''
     }
   ]
 }
-'''
+"""
 
-MOCK_OSV_SCANNER_JSON = '''
+MOCK_OSV_SCANNER_JSON = """
 {
   "results": [
     {
@@ -82,9 +87,9 @@ MOCK_OSV_SCANNER_JSON = '''
     }
   ]
 }
-'''
+"""
 
-MOCK_OWASP_ZAP_JSON = '''
+MOCK_OWASP_ZAP_JSON = """
 {
   "@version": "2.11.1",
   "site": [
@@ -112,9 +117,11 @@ MOCK_OWASP_ZAP_JSON = '''
     }
   ]
 }
-'''
+"""
+
 
 def test_parse_semgrep_json():
+    """Test parsing of Semgrep JSON output format."""
     findings = OutputParser.parse_semgrep_json(MOCK_SEMGREP_JSON)
     assert len(findings) == 2
 
@@ -131,9 +138,11 @@ def test_parse_semgrep_json():
     assert f2.filePath == "src/utils.py"
     assert f2.lineNumber == 5
 
+
 def test_parse_trivy_json():
+    """Test parsing of Trivy JSON output format."""
     findings = OutputParser.parse_trivy_json(MOCK_TRIVY_JSON)
-    assert len(findings) == 2 # 1 vulnerability, 1 misconfiguration
+    assert len(findings) == 2  # 1 vulnerability, 1 misconfiguration
 
     f1 = findings[0]
     assert isinstance(f1, Finding)
@@ -151,7 +160,9 @@ def test_parse_trivy_json():
     assert f2.filePath == "Dockerfile"
     assert f2.lineNumber == 1
 
+
 def test_parse_osv_scanner_json():
+    """Test parsing of OSV-Scanner JSON output format."""
     findings = OutputParser.parse_osv_scanner_json(MOCK_OSV_SCANNER_JSON)
     assert len(findings) == 1
 
@@ -163,7 +174,9 @@ def test_parse_osv_scanner_json():
     assert f1.filePath == "requirements.lock"
     assert f1.lineNumber is None
 
+
 def test_parse_owasp_zap_json():
+    """Test parsing of OWASP ZAP JSON output format."""
     findings = OutputParser.parse_owasp_zap_json(MOCK_OWASP_ZAP_JSON)
     assert len(findings) == 1
 
@@ -172,6 +185,9 @@ def test_parse_owasp_zap_json():
     assert f1.tool == "OWASP ZAP"
     assert "Cross Site Scripting (Reflected)" in f1.description
     assert f1.severity == "High"
-    assert f1.filePath == "http://localhost:8080/search?query=test<script>alert(1)</script>"
+    assert (
+        f1.filePath
+        == "http://localhost:8080/search?query=test<script>alert(1)</script>"
+    )
     assert f1.lineNumber is None
     assert "CWE-79" in f1.complianceMappings

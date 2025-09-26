@@ -1,6 +1,7 @@
 import json
 import subprocess
 from pathlib import Path
+
 from src.models.finding import Finding
 from src.orchestration.parser import OutputParser
 
@@ -16,11 +17,20 @@ class SemgrepRunner:
         project_path_obj = Path(project_path)
         # Align with unit test expectations (simplified invocation)
         command = [
-            "podman", "run", "--rm",
+            "podman",
+            "run",
+            "--rm",
             "--network=none",
-            "-v", f"{project_path_obj}:/src",
-            "-v", f"{project_path_obj}:/.semgrep.yml:/.semgrep.yml",
-            "docker.io/semgrep/semgrep", "semgrep", "--config", "/.semgrep.yml", "--json", "/src"
+            "-v",
+            f"{project_path_obj}:/src",
+            "-v",
+            f"{project_path_obj}:/.semgrep.yml:/.semgrep.yml",
+            "docker.io/semgrep/semgrep",
+            "semgrep",
+            "--config",
+            "/.semgrep.yml",
+            "--json",
+            "/src",
         ]
 
         try:

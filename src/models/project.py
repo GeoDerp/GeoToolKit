@@ -8,12 +8,22 @@ class Project(BaseModel):
     """
     Represents a single source code repository to be scanned.
     """
-    id: UUID = Field(default_factory=uuid4, description="Unique identifier for the project.")
+
+    id: UUID = Field(
+        default_factory=uuid4, description="Unique identifier for the project."
+    )
     url: str = Field(..., description="The Git URL or local path of the repository.")
     name: str = Field(..., description="The name of the repository.")
-    language: str | None = Field(None, description="Primary programming language of the project.")
-    description: str | None = Field(None, description="Brief description of the project.")
-    languages: list[str] = Field(default_factory=list, description="A list of programming languages detected in the project.")
+    language: str | None = Field(
+        None, description="Primary programming language of the project."
+    )
+    description: str | None = Field(
+        None, description="Brief description of the project."
+    )
+    languages: list[str] = Field(
+        default_factory=list,
+        description="A list of programming languages detected in the project.",
+    )
 
     @field_validator("url")
     @classmethod

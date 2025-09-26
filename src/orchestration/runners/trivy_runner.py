@@ -18,11 +18,19 @@ class TrivyRunner:
         # Use a placeholder seccomp path to match unit test expectations
         seccomp_path = "/path/to/trivy-seccomp.json"
         command = [
-            "podman", "run", "--rm",
+            "podman",
+            "run",
+            "--rm",
             "--network=none",
             f"--security-opt=seccomp={seccomp_path}",
-            "-v", f"{target_path_obj}:/src",
-            "docker.io/aquasec/trivy", "trivy", scan_type, "--format", "json", "/src"
+            "-v",
+            f"{target_path_obj}:/src",
+            "docker.io/aquasec/trivy",
+            "trivy",
+            scan_type,
+            "--format",
+            "json",
+            "/src",
         ]
 
         try:

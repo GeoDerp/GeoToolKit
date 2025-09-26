@@ -1,9 +1,17 @@
-# GeoToolKit: Automated Malicious Code Scanner 🛡️
+# GeoToolKit: Automated Security Scanner 🛡️
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-M3. **View the results**: Open `security-report.md` in your favorite editor
+
+### Quick Validation
+
+Try with the included `test-projects.json` to validate Python and Go scanning quickly:
+
+```bash
+python src/main.py --input test-projects.json --output quick-report.md --database-path data/offline-db.tar.gz
+```ps://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 
-GeoToolKit is a comprehensive, offline software assurance toolkit designed to scan open-source Git repositories for malicious code and vulnerabilities. It orchestrates a suite of industry-standard security scanning tools, running each in secure, isolated Podman containers for maximum safety and reliability.
+GeoToolKit is a comprehensive, offline software assurance toolkit designed to scan open-source Git repositories for malicious code and vulnerabilities. It orchestrates industry-standard security scanning tools, running each in secure, isolated Podman containers for maximum safety and reliability.
 
 ## ✨ Features
 
@@ -63,17 +71,17 @@ GeoToolKit is a comprehensive, offline software assurance toolkit designed to sc
    source .venv/bin/activate
    uv sync
    
-   # Or using pip
+   <!-- # Or using pip
    python -m venv .venv
    source .venv/bin/activate
-   pip install -e .
+   pip install -e . -->
    ```
 
 3. **Prepare offline database** (optional but recommended):
    ```bash
    mkdir -p data
-   # Place your offline vulnerability database
-   # mv /path/to/offline-db.tar.gz data/
+   # Use the automated builder script
+   python scripts/build_offline_db.py --output data/offline-db.tar.gz --simulate
    ```
 
 ### Basic Usage
@@ -157,63 +165,51 @@ python src/main.py \
   --network-allowlist network-allowlist.txt
 ```
 
-## 📚 Offline Database Recommendations
+## 📚 Offline Database Setup
 
-For optimal security and performance in air-gapped environments, consider these offline vulnerability databases:
+For optimal security and performance in air-gapped environments, GeoToolKit supports offline vulnerability databases.
 
-### Primary Recommendations
+### Automated Database Builder
 
-1. **National Vulnerability Database (NVD)**
-   - Download: [https://nvd.nist.gov/vuln/data-feeds](https://nvd.nist.gov/vuln/data-feeds)
-   - Format: JSON feeds updated daily
-   - Coverage: Comprehensive CVE database
-
-2. **OSV Database Export**
-   - Download: [https://osv.dev/](https://osv.dev/)
-   - Command: `osv-scanner --experimental-download-offline-databases`
-   - Coverage: Open Source Vulnerabilities
-
-3. **GitHub Security Advisory Database**
-   - Download: [https://github.com/advisories](https://github.com/advisories)
-   - Format: GHSA JSON format
-   - Coverage: GitHub-specific advisories
-
-### Database Setup
+You can automatically assemble an offline database bundle combining multiple vulnerability sources:
 
 ```bash
-# Create data directory
-mkdir -p data
-
-# Download NVD feeds (example)
-wget https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-recent.json.gz -P data/
-gunzip data/nvdcve-1.1-recent.json.gz
-
-# Create compressed database
-tar -czf data/offline-db.tar.gz -C data *.json
-
-# Verify database
-ls -la data/offline-db.tar.gz
-```
-
-### Automated Offline Bundle Builder
-
-You can automatically assemble an "ultimate" offline database bundle combining NVD, OSV, and optionally GHSA using the helper script:
-
-```fish
+# Create a comprehensive offline database
 python scripts/build_offline_db.py \
   --output data/offline-db.tar.gz \
   --years 2023 2024 2025
-```
 
-Options:
-- `--simulate` to create a placeholder bundle without any network calls (useful for CI or air-gapped dry runs)
-- `--no-osv` or `--no-ghsa` to skip specific sources
-- Set `GITHUB_TOKEN` environment variable to enable GHSA export (sample, paged)
-
-Example (simulate mode):
-```fish
+# For air-gapped environments (simulation mode)
 python scripts/build_offline_db.py --output data/offline-db.tar.gz --simulate
 ```
+
+**Options:**
+- `--simulate`: Create a placeholder bundle without network calls (useful for CI or air-gapped environments)
+- `--no-osv` or `--no-ghsa`: Skip specific vulnerability sources
+- Set `GITHUB_TOKEN` environment variable to enable GitHub Security Advisory export
+
+### Manual Database Setup
+
+For manual database configuration:
+
+1. **National Vulnerability Database (NVD)**
+   - Download: [https://nvd.nist.gov/vuln/data-feeds](https://nvd.nist.gov/vuln/data-feeds)
+
+2. **OSV Database**
+   - Command: `osv-scanner --experimental-download-offline-databases`
+
+3. **GitHub Security Advisories**
+   - Download: [https://github.com/advisories](https://github.com/advisories)
+
+### Troubleshooting
+
+- If containers fail to start, ensure Podman is installed and seccomp profiles exist at `seccomp/*.json`
+- For corporate networks with blocked image pulls, pre-pull required images:
+  - `docker.io/semgrep/semgrep`
+  - `docker.io/aquasec/trivy`
+  - `ghcr.io/ossf/osv-scanner:latest`
+  - `docker.io/owasp/zap2docker-stable:latest`
+- For strictly offline environments, consider mirroring images to a local registry
 
 ## 🛠️ Development
 
@@ -255,7 +251,7 @@ uv run mypy src/
 ### Container Security
 
 - **Rootless execution** - All containers run without root privileges
-- **No network access** - SAST/SCA tools run with `--network=none`
+- **Network isolation** - SAST/SCA tools run with `--network=none`
 - **Read-only filesystems** - Containers cannot modify their base images
 - **Capability dropping** - All Linux capabilities dropped by default
 - **Seccomp profiles** - Restrictive syscall filtering for each tool
@@ -265,7 +261,7 @@ uv run mypy src/
 
 | Language   | SAST | SCA | Package Managers |
 |------------|------|-----|------------------|
-| Python     | ✅   | ✅  | pip, poetry, pipenv |
+| Python     | ✅   | ✅  | pip, poetry, pipenv, uv |
 | JavaScript | ✅   | ✅  | npm, yarn, pnpm |
 | TypeScript | ✅   | ✅  | npm, yarn, pnpm |
 | Java       | ✅   | ✅  | maven, gradle |
@@ -288,7 +284,25 @@ The generated reports include:
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+Contributions are welcome! Please follow these guidelines:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add or update tests
+5. Ensure all tests pass
+6. Submit a pull request
+
+### Development Setup
+
+```bash
+# Install development dependencies
+uv sync --dev
+
+# Run pre-commit hooks
+uv run ruff check --fix src/ tests/
+uv run ruff format src/ tests/
+```
 
 ## 📄 License
 
@@ -296,74 +310,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🏷️ Version
 
-Current version: v0.1.0 (Beta)
+Current version: **v0.1.0** (Beta)
 
 ## 📞 Support
 
-- Create an issue: [GitHub Issues](https://github.com/GeoDerp/GeoToolKit/issues)
-- Documentation: [Project Wiki](https://github.com/GeoDerp/GeoToolKit/wiki)
-- Security Issues: Please report privately via email
+- **Issues**: [GitHub Issues](https://github.com/GeoDerp/GeoToolKit/issues)
+- **Documentation**: [Project Wiki](https://github.com/GeoDerp/GeoToolKit/wiki)
+- **Security Issues**: Please report privately via email
 
 ---
 
 **⚠️ Security Notice**: This tool is designed for security testing of software you own or have permission to test. Always ensure you have proper authorization before scanning any repositories or applications.
-        }
-      ]
-    }
-    ```
-
-2.  **Run the scanner**: Execute the `main.py` script with the required arguments.
-    ```bash
-    python src/main.py \
-      --input projects.json \
-      --output report.md \
-      --database-path data/offline-db.tar.gz
-    ```
-    *Note: The runner tools (Semgrep, Trivy, OSV-Scanner, OWASP ZAP) are expected to be available in your environment or configured to run via Podman (Podman integration is currently commented out in runners for devcontainer compatibility).*
-
-3.  **View the report**: The generated Markdown report will be available at `report.md`.
-
-## 4. Configuration
-
-### Network Allow-list (for DAST Scanner)
-
-To allow the DAST scanner (OWASP ZAP) to make network connections to specific hosts and ports, create a `network-allowlist.txt` file with one `host:port` entry per line:
-
-```
-localhost:8080
-database.example.com:5432
-```
-
-Then, pass the path to this file to the scanner:
-
-```bash
-python src/main.py \
-  --input projects.json \
-  --output report.md \
-  --database-path data/offline-db.tar.gz \
-  --network-allowlist network-allowlist.txt
-```
-
-## 5. Development
-
-### Running Tests
-
-To run unit and integration tests:
-
-```bash
-# Ensure dependencies are installed
-uv sync
-# Run tests
-python -m pytest tests/
-```
-
-*Note: Some unit tests related to Pydantic's ValidationError might currently fail due to environment-specific interactions with pytest.raises. This is a known issue and does not block core functionality.*
-
-### Linting and Formatting
-
-This project uses `ruff` for linting and formatting. You can run checks and format the code using `uv`:
-
-```bash
-uv run lint
-uv run format
-```

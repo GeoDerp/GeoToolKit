@@ -3,7 +3,6 @@ from collections import Counter
 from datetime import datetime
 
 from jinja2 import Environment, FileSystemLoader
-
 from src.models.project import Project
 from src.models.scan import Scan
 
@@ -13,7 +12,9 @@ class ReportGenerator:
     Generates a comprehensive Markdown report from scan results using a Jinja2 template.
     """
 
-    def __init__(self, scans: list[Scan], projects: list[Project], output_filepath: str):
+    def __init__(
+        self, scans: list[Scan], projects: list[Project], output_filepath: str
+    ):
         self.scans = scans
         self.projects = projects
         self.output_filepath = output_filepath
@@ -43,32 +44,35 @@ class ReportGenerator:
             "severity_stats": severity_stats,
             "tool_stats": tool_stats,
             "language_stats": language_stats,
-            "scans": []
+            "scans": [],
         }
 
         for scan in self.scans:
             project = project_map.get(str(scan.projectId))
             if not project:
                 continue
-                
-            template_data["scans"].append({
-                "scan_id": scan.id,
-                "project_name": project.name,
-                "project_url": project.url,
-                "project_language": project.language,
-                "project_description": project.description,
-                "status": scan.status,
-                "findings_count": len(scan.results),
-                "findings": [
-                    {
-                        "severity": f.severity,
-                        "tool": f.tool,
-                        "description": f.description,
-                        "filePath": f.filePath,
-                        "lineNumber": f.lineNumber
-                    } for f in scan.results
-                ]
-            })
+
+            template_data["scans"].append(
+                {
+                    "scan_id": scan.id,
+                    "project_name": project.name,
+                    "project_url": project.url,
+                    "project_language": project.language,
+                    "project_description": project.description,
+                    "status": scan.status,
+                    "findings_count": len(scan.results),
+                    "findings": [
+                        {
+                            "severity": f.severity,
+                            "tool": f.tool,
+                            "description": f.description,
+                            "filePath": f.filePath,
+                            "lineNumber": f.lineNumber,
+                        }
+                        for f in scan.results
+                    ],
+                }
+            )
 
         rendered_report = self.template.render(template_data)
 
@@ -97,10 +101,10 @@ class ReportGenerator:
         """Calculate statistics by programming language."""
         language_counter = Counter()
         project_map = {str(p.id): p for p in self.projects}
-        
+
         for scan in self.scans:
             project = project_map.get(str(scan.projectId))
             if project and project.language:
                 language_counter[project.language] += len(scan.results)
-        
+
         return dict(language_counter)

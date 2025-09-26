@@ -3,7 +3,6 @@ import tempfile
 from pathlib import Path
 
 import git
-
 from src.models.finding import Finding
 from src.models.project import Project
 from src.models.scan import Scan
@@ -19,7 +18,9 @@ class Workflow:
     """
 
     @staticmethod
-    def run_project_scan(project: Project, network_allowlist: list[str] | None = None) -> Scan:
+    def run_project_scan(
+        project: Project, network_allowlist: list[str] | None = None
+    ) -> Scan:
         """Runs a complete security scan for a given project using all configured runners."""
         scan = Scan(projectId=project.id, status="in_progress")
         all_findings: list[Finding] = []
@@ -33,7 +34,11 @@ class Workflow:
             project_path_str = str(project.url)
             print(f"Using local path: {project_path_str}")
             try:
-                all_findings.extend(Workflow._run_security_scans(project_path_str, project, network_allowlist))
+                all_findings.extend(
+                    Workflow._run_security_scans(
+                        project_path_str, project, network_allowlist
+                    )
+                )
             except Exception as e:
                 print(f"Error processing local path {project_path_str}: {e}")
                 scan.status = "failed"
@@ -54,7 +59,11 @@ class Workflow:
                     print(f"Repository cloned successfully to {project_path}")
                     print(f"Repository head: {repo.head.commit.hexsha[:8]}")
                     # Run security scans on the cloned repository
-                    all_findings.extend(Workflow._run_security_scans(str(project_path), project, network_allowlist))
+                    all_findings.extend(
+                        Workflow._run_security_scans(
+                            str(project_path), project, network_allowlist
+                        )
+                    )
                 except git.GitCommandError as e:
                     print(f"Failed to clone repository {project.url}: {e}")
                     scan.status = "failed"
@@ -65,11 +74,15 @@ class Workflow:
         scan.results = all_findings
         if scan.status != "failed":
             scan.status = "completed"
-        print(f"Scan for {project.name} completed with {len(all_findings)} total findings.")
+        print(
+            f"Scan for {project.name} completed with {len(all_findings)} total findings."
+        )
         return scan
 
     @staticmethod
-    def _run_security_scans(project_path: str, project: Project, network_allowlist: list[str] | None) -> list[Finding]:
+    def _run_security_scans(
+        project_path: str, project: Project, network_allowlist: list[str] | None
+    ) -> list[Finding]:
         """
         Runs all security scanning tools on the given project path.
         All tools run in secure, isolated Podman containers.
@@ -107,13 +120,17 @@ class Workflow:
             if Workflow._should_run_dast_scan(project):
                 print("🔍 Running OWASP ZAP (DAST)...")
                 try:
-                    zap_findings = ZapRunner.run_scan(str(project.url), network_allowlist=network_allowlist)
+                    zap_findings = ZapRunner.run_scan(
+                        str(project.url), network_allowlist=network_allowlist
+                    )
                     all_findings.extend(zap_findings)
                     print(f"✅ OWASP ZAP found {len(zap_findings)} findings.")
                 except Exception as e:
                     print(f"❌ OWASP ZAP scan failed: {e}")
             else:
-                print("ℹ️  Skipping OWASP ZAP (DAST) - not applicable for source code analysis")
+                print(
+                    "ℹ️  Skipping OWASP ZAP (DAST) - not applicable for source code analysis"
+                )
 
         except subprocess.CalledProcessError as e:
             print(f"❌ Security scan subprocess failed: {e}")
@@ -134,12 +151,15 @@ class Workflow:
         """
         url_str = str(project.url).lower()
         # Skip DAST for GitHub/GitLab/etc URLs (source repositories)
-        if any(domain in url_str for domain in ["github.com", "gitlab.com", "bitbucket.org"]):
+        if any(
+            domain in url_str
+            for domain in ["github.com", "gitlab.com", "bitbucket.org"]
+        ):
             return False
         # Enable DAST for HTTP/HTTPS URLs that might be running applications
         if url_str.startswith(("http://", "https://")) and not any(
-            domain in url_str for domain in ["github.com", "gitlab.com", "bitbucket.org"]
+            domain in url_str
+            for domain in ["github.com", "gitlab.com", "bitbucket.org"]
         ):
             return True
         return False
-

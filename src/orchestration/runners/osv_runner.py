@@ -19,11 +19,18 @@ class OSVRunner:
         seccomp_path = "/path/to/osv-scanner-seccomp.json"
 
         command = [
-            "podman", "run", "--rm",
+            "podman",
+            "run",
+            "--rm",
             "--network=none",
             f"--security-opt=seccomp={seccomp_path}",
-            "-v", f"{project_path_obj}:/src",
-            "ghcr.io/ossf/osv-scanner:latest", "osv-scanner", "--format", "json", "/src"
+            "-v",
+            f"{project_path_obj}:/src",
+            "ghcr.io/ossf/osv-scanner:latest",
+            "osv-scanner",
+            "--format",
+            "json",
+            "/src",
         ]
 
         try:

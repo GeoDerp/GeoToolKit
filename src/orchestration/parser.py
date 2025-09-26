@@ -38,7 +38,7 @@ class OutputParser:
                     severity=severity,
                     filePath=path,
                     lineNumber=start_line if start_line is not None else end_line,
-                    complianceMappings=[]  # Semgrep doesn't directly provide compliance mappings in default JSON
+                    complianceMappings=[],  # Semgrep doesn't directly provide compliance mappings in default JSON
                 )
             )
         return findings
@@ -60,7 +60,9 @@ class OutputParser:
                 pkg_name = vulnerability.get("PkgName", "N/A")
                 installed_version = vulnerability.get("InstalledVersion", "N/A")
                 severity_str = vulnerability.get("Severity", "UNKNOWN").capitalize()
-                description = vulnerability.get("Description", "No description provided.")
+                description = vulnerability.get(
+                    "Description", "No description provided."
+                )
 
                 # Map Trivy severity
                 if severity_str == "Critical":
@@ -81,7 +83,7 @@ class OutputParser:
                         severity=severity,
                         filePath=target,  # Trivy's target can be a file path or image name
                         lineNumber=None,  # Trivy vulnerabilities are package-level, no specific line number
-                        complianceMappings=[]  # Trivy doesn't directly provide compliance mappings in default JSON
+                        complianceMappings=[],  # Trivy doesn't directly provide compliance mappings in default JSON
                     )
                 )
 
@@ -89,7 +91,9 @@ class OutputParser:
             for misconfiguration in result_block.get("Misconfigurations", []):
                 policy_id = misconfiguration.get("ID", "N/A")
                 title = misconfiguration.get("Title", "N/A")
-                description = misconfiguration.get("Description", "No description provided.")
+                description = misconfiguration.get(
+                    "Description", "No description provided."
+                )
                 severity_str = misconfiguration.get("Severity", "UNKNOWN").capitalize()
                 filepath = misconfiguration.get("Filepath", "N/A")
                 start_line = misconfiguration.get("StartLine", None)
@@ -113,7 +117,7 @@ class OutputParser:
                         severity=severity,
                         filePath=filepath,
                         lineNumber=start_line,
-                        complianceMappings=[]  # Trivy doesn't directly provide compliance mappings in default JSON
+                        complianceMappings=[],  # Trivy doesn't directly provide compliance mappings in default JSON
                     )
                 )
         return findings
@@ -149,7 +153,7 @@ class OutputParser:
                             severity=severity,
                             filePath=source_path,
                             lineNumber=None,
-                            complianceMappings=[]  # OSV-Scanner doesn't directly provide compliance mappings
+                            complianceMappings=[],  # OSV-Scanner doesn't directly provide compliance mappings
                         )
                     )
         return findings
@@ -165,7 +169,9 @@ class OutputParser:
                 alert_name = alert.get("alert", "N/A")
                 description = alert.get("desc", "No description provided.")
                 solution = alert.get("solution", "No solution provided.")
-                risk_desc = alert.get("riskdesc", "UNKNOWN").split(" ")[0]  # e.g., "High (Medium)" -> "High"
+                risk_desc = alert.get("riskdesc", "UNKNOWN").split(" ")[
+                    0
+                ]  # e.g., "High (Medium)" -> "High"
                 cwe_id = alert.get("cweid", "N/A")
 
                 # Map ZAP risk to our standardized severity levels
@@ -189,7 +195,9 @@ class OutputParser:
                             severity=severity,
                             filePath=uri,  # URI is the closest to a 'file path' for web scans
                             lineNumber=None,
-                            complianceMappings=[f"CWE-{cwe_id}"] if cwe_id != "N/A" else []
+                            complianceMappings=[f"CWE-{cwe_id}"]
+                            if cwe_id != "N/A"
+                            else [],
                         )
                     )
         return findings

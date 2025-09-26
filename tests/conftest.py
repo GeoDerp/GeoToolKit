@@ -1,3 +1,9 @@
+"""Test configuration and shared fixtures for GeoToolKit tests.
+
+This module sets up the test environment by adding the project root
+to sys.path so that the src module can be imported in tests.
+"""
+
 import os
 import sys
 

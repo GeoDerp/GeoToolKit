@@ -1,7 +1,7 @@
 [project]
 name = "geotoolkit"
 version = "0.1.0"
-description = "A simple FastAPI Python template with Uv"
+description = "Automated Security Scanner for Git Repositories"
 readme = "README.md"
 authors = []
 
@@ -20,8 +20,9 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
-    "Framework :: FastAPI" # Add fastapi framework
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+    "Development Status :: 3 - Alpha"
 ]
 
 [build-system]
