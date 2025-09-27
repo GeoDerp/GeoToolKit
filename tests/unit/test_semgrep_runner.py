@@ -1,4 +1,5 @@
 import subprocess
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from src.models.finding import Finding
@@ -31,29 +32,35 @@ def test_semgrep_runner_success():
         mock_result.returncode = 0
         mock_subprocess_run.return_value = mock_result
 
-        findings = SemgrepRunner.run_scan("/mock/project/path")
+        # Simulate that the default config is used
+        with patch("pathlib.Path.exists") as mock_exists:
+            # The first two checks for local configs fail, the third for default config succeeds
+            mock_exists.side_effect = [False, False, False, False, True]
 
-        mock_subprocess_run.assert_called_once_with(
-            [
-                "podman",
-                "run",
-                "--rm",
-                "--network=none",
-                "-v",
-                "/mock/project/path:/src",
-                "-v",
-                "/mock/project/path:/.semgrep.yml:/.semgrep.yml",
-                "docker.io/semgrep/semgrep",
-                "semgrep",
-                "--config",
-                "/.semgrep.yml",
-                "--json",
-                "/src",
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
+            findings = SemgrepRunner.run_scan("/mock/project/path")
+
+            default_rules_path = str(Path(__file__).parents[2] / "rules" / "semgrep" / "default.semgrep.yml")
+            mock_subprocess_run.assert_called_once_with(
+                [
+                    "podman",
+                    "run",
+                    "--rm",
+                    "--network=none",
+                    "-v",
+                    "/mock/project/path:/src:ro,Z",
+                    "-v",
+                    f"{default_rules_path}:/rules.yml:ro,Z",
+                    "docker.io/semgrep/semgrep",
+                    "semgrep",
+                    "--config",
+                    "/rules.yml",
+                    "--json",
+                    "/src",
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
         assert len(findings) == 1
         assert isinstance(findings[0], Finding)
         assert findings[0].tool == "Semgrep"

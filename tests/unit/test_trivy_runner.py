@@ -1,4 +1,5 @@
 import subprocess
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from src.models.finding import Finding
@@ -45,15 +46,16 @@ def test_trivy_runner_success():
 
         findings = TrivyRunner.run_scan("/mock/target/path", scan_type="fs")
 
+        seccomp_path = str(Path(__file__).parents[2] / "seccomp" / "trivy-seccomp.json")
         mock_subprocess_run.assert_called_once_with(
             [
                 "podman",
                 "run",
                 "--rm",
                 "--network=none",
-                "--security-opt=seccomp=/path/to/trivy-seccomp.json",
+                f"--security-opt=seccomp={seccomp_path}",
                 "-v",
-                "/mock/target/path:/src",
+                "/mock/target/path:/src:ro,Z",
                 "docker.io/aquasec/trivy",
                 "trivy",
                 "fs",

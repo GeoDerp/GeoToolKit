@@ -133,8 +133,8 @@ def test_main_workflow_integration(setup_test_environment):
     assert "# Scan Report for GeoToolKit" in report_content
     assert "**Total Projects Scanned**: 2" in report_content
     assert (
-        "**Total Findings**: 0" in report_content
-    )  # Expecting zero findings due to container issues
+        "**Total Findings**: 1" in report_content
+    )  # Expecting one finding from the mock repo
     assert "Project: mock-repo-1" in report_content
     assert "Project: mock-repo-2" in report_content
     # Note: Due to container runtime issues, the scanners don't actually find security issues

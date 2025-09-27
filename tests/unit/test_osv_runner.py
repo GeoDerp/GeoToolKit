@@ -1,4 +1,5 @@
 import subprocess
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from src.models.finding import Finding
@@ -38,15 +39,16 @@ def test_osv_runner_success():
 
         findings = OSVRunner.run_scan("/mock/project/path")
 
+        seccomp_path = str(Path(__file__).parents[2] / "seccomp" / "osv-scanner-seccomp.json")
         mock_subprocess_run.assert_called_once_with(
             [
                 "podman",
                 "run",
                 "--rm",
                 "--network=none",
-                "--security-opt=seccomp=/path/to/osv-scanner-seccomp.json",
+                f"--security-opt=seccomp={seccomp_path}",
                 "-v",
-                "/mock/project/path:/src",
+                "/mock/project/path:/src:ro,Z",
                 "ghcr.io/ossf/osv-scanner:latest",
                 "osv-scanner",
                 "--format",

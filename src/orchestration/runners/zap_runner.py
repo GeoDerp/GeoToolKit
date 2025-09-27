@@ -34,9 +34,6 @@ class ZapRunner:
             "true",
             "yes",
         )
-        # Never start containers inside unit tests; tests mock HTTP calls
-        if "PYTEST_CURRENT_TEST" in os.environ:
-            skip_container = True
         podman_pull_policy = os.environ.get("ZAP_PODMAN_PULL", "missing")
         # Construct podman command (when not skipping container)
         podman_command: list[str] = [

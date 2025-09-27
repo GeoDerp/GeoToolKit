@@ -171,10 +171,13 @@ def collect_ghsa(out_dir: Path, simulate: bool) -> dict:
 
 
 def build_bundle(output: Path, workspace: Path, manifest: dict) -> None:
+    # Write manifest inside the workspace before bundling
+    (workspace / "metadata.json").write_text(json.dumps(manifest, indent=2))
     safe_mkdir(output.parent)
     with tarfile.open(output, "w:gz") as tar:
-        tar.add(workspace, arcname="offline-db")
-    (workspace / "metadata.json").write_text(json.dumps(manifest, indent=2))
+        # Add the contents of the workspace directory to the tarball at the root
+        for item in workspace.iterdir():
+            tar.add(item, arcname=item.name)
 
 
 def parse_args() -> argparse.Namespace:
@@ -230,7 +233,7 @@ def main() -> int:
         # Write manifest before tar for visibility in workspace as well
         (temp_root / "metadata.json").write_text(json.dumps(manifest, indent=2))
 
-        # Create bundle
+                # Create bundle
         build_bundle(output, temp_root, manifest)
         log(f"Bundle created at: {output}")
         return 0
