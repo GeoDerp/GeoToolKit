@@ -65,12 +65,20 @@ class Workflow:
                 try:
                     print(f"Cloning repository {project.url} to {project_path}")
                     # Clone with security considerations
+                    # Enhanced security: disable git hooks and templates to prevent execution
+                    # of potentially malicious code during clone operations
+                    secure_env = {
+                        "GIT_TEMPLATE_DIR": "",  # Disable git template directory
+                        "GIT_CONFIG_NOSYSTEM": "1",  # Ignore system-wide git config
+                        "GIT_CONFIG_GLOBAL": "/dev/null",  # Ignore global git config
+                    }
                     repo = git.Repo.clone_from(
                         str(project.url),
                         str(project_path),
                         depth=1,  # Shallow clone for efficiency
                         single_branch=True,  # Only default branch
                         no_hardlinks=True,  # Prevent hardlink attacks
+                        env=secure_env,  # Apply security environment variables
                     )
                     print(f"Repository cloned successfully to {project_path}")
                     print(f"Repository head: {repo.head.commit.hexsha[:8]}")
