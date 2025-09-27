@@ -520,6 +520,7 @@ class ProductionValidator:
                 logger.warning(f"⚠️ Code quality issues found: {total_issues} lint issues")
                 if mypy_result.returncode != 0:
                     logger.warning("⚠️ Type checking issues found")
+                    logger.warning(f"Type checking issues: {(mypy_result.stdout + mypy_result.stderr)[:200]}")
                     
         except (subprocess.TimeoutExpired, FileNotFoundError) as e:
             logger.warning(f"Code quality validation skipped: {e}")
