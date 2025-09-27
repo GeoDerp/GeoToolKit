@@ -1,0 +1,83 @@
+# Files and directories to ignore for GitHub Copilot suggestions
+
+# Build artifacts and dependencies
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+uv.lock
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Testing and coverage
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Logs and temporary files
+*.log
+logs/
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE and editor files
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Security and sensitive files
+.env.local
+.env.*.local
+*.key
+*.pem
+secrets/
+.secrets/
+
+# Data and output directories
+data/
+reports/
+output/
+tmp/
+temp/
+
+# Container and deployment
+.dockerignore
+docker-compose.override.yml
+kubernetes/secrets/

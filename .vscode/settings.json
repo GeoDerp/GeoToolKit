@@ -1,12 +1,4 @@
 {
-    // "dev.containers.dockerPath": "podman",
-    // "dev.containers.dockerComposePath": "podman-compose",
-    // "docker.commands.composeUp": [
-    //     {
-    //         "label": "Compose Up",
-    //         "template": "${composeCommand} ${configurationFile} up ${detached} ${build}"
-    //     }
-    // ],
     "python.testing.unittestArgs": [
         "-v",
         "-s",
@@ -20,5 +12,25 @@
     "dev.containers.dockerSocketPath": "/run/user/1000/podman/podman.sock",
     "python.testing.pytestArgs": [
         "tests"
-    ]
+    ],
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": false,
+        "markdown": true,
+        "scminput": false,
+        "python": true,
+        "javascript": true,
+        "typescript": true,
+        "json": true,
+        "yaml": true,
+        "dockerfile": true
+    },
+    "github.copilot.inlineSuggest.enable": true,
+    "github.copilot.advanced": {
+        "listCount": 10,
+        "inlineSuggestCount": 3
+    },
+    "editor.inlineSuggest.enabled": true,
+    "editor.suggestOnTriggerCharacters": true,
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true
 }

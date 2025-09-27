@@ -9,16 +9,101 @@
                 "isDefault": true
             },
             "args": [
-                "pip",
-                "install",
-                "--force-reinstall",
-                "."
+                "sync",
+                "--dev"
             ],
             "presentation": {
                 "echo": true,
                 "panel": "shared",
                 "focus": true
-            },
+            }
         },
+        {
+            "label": "Run Tests",
+            "command": "uv",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "args": [
+                "run",
+                "pytest",
+                "tests/",
+                "-v"
+            ],
+            "presentation": {
+                "echo": true,
+                "panel": "shared",
+                "focus": false
+            }
+        },
+        {
+            "label": "Lint Code",
+            "command": "uv",
+            "group": "build",
+            "args": [
+                "run",
+                "ruff",
+                "check",
+                "src",
+                "tests"
+            ],
+            "presentation": {
+                "echo": true,
+                "panel": "shared",
+                "focus": false
+            }
+        },
+        {
+            "label": "Format Code", 
+            "command": "uv",
+            "group": "build",
+            "args": [
+                "run",
+                "ruff",
+                "format",
+                "src",
+                "tests"
+            ],
+            "presentation": {
+                "echo": true,
+                "panel": "shared",
+                "focus": false
+            }
+        },
+        {
+            "label": "Type Check",
+            "command": "uv",
+            "group": "build",
+            "args": [
+                "run",
+                "mypy",
+                "src"
+            ],
+            "presentation": {
+                "echo": true,
+                "panel": "shared",
+                "focus": false
+            }
+        },
+        {
+            "label": "Start Security Scanner",
+            "command": "uv",
+            "group": "build",
+            "args": [
+                "run",
+                "python",
+                "src/main.py",
+                "--input",
+                "projects.json",
+                "--output",
+                "security-report.md"
+            ],
+            "presentation": {
+                "echo": true,
+                "panel": "shared",
+                "focus": false
+            }
+        }
     ]
 }
