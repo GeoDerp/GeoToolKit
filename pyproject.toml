@@ -83,7 +83,7 @@ packages = ["src", "mcp"]
 include = [
     "src/reporting/templates/report.md",
     "mcp/manifest.json",
-    "mcp/README.md", 
+    "mcp/README.md",
     "tests",
 ]
 
