@@ -1,7 +1,10 @@
+import logging
 from pathlib import Path
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, HttpUrl, field_validator
+
+logger = logging.getLogger(__name__)
 
 
 class Project(BaseModel):
@@ -53,7 +56,8 @@ class Project(BaseModel):
                 return v
             except Exception:
                 # If it's not a valid URL and not a local path, it might still be a relative path
-                # Allow any non-empty string for flexibility
+                # Log warning for potentially invalid URLs
+                logger.warning(f"URL '{v}' doesn't match expected patterns, allowing for flexibility")
                 return v
         raise ValueError("URL must be a non-empty string")
 

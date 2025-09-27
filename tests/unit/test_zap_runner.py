@@ -70,7 +70,8 @@ def test_zap_runner_success():
         assert findings[0].tool == "OWASP ZAP"
         assert findings[0].severity == "High"
         assert "Cross Site Scripting" in findings[0].description
-        assert findings[0].filePath == "http://localhost:8080/test?param=value"
+        expected_uri = json.loads(MOCK_ZAP_ALERTS_OUTPUT)["alerts"][0]["instances"][0]["uri"]
+        assert findings[0].filePath == expected_uri
         assert "CWE-79" in findings[0].complianceMappings
 
 
