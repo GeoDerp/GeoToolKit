@@ -1,11 +1,14 @@
-# GeoToolKit: Automated Security Scanner 🛡️
+<h1 >GeoToolKit — Automated Security Scanner 🛡️</h1>
+<p >Podman-based orchestration for SAST, SCA, and DAST — automated security scanning and reporting for Git repositories.</p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 
+---
+
 GeoToolKit is a comprehensive, offline software assurance toolkit designed to scan open-source Git repositories for malicious code and vulnerabilities. It orchestrates industry-standard security scanning tools, running each in secure, isolated Podman containers for maximum safety and reliability.
 
-## ✨ Features
+
 
 - **🔒 Secure Container Execution**: All scanning tools run in locked-down, rootless Podman containers with restrictive seccomp profiles
 - **🌐 Multi-Language Support**: Scans projects in Python, JavaScript, TypeScript, Java, Go, Ruby, C#, PHP, and more
