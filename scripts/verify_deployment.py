@@ -41,9 +41,15 @@ def verify_cli_package():
     # Check entry points in wheel
     with zipfile.ZipFile(wheel_file, "r") as zf:
         try:
-            entry_points = zf.read(
-                "geotoolkit-0.1.0.dist-info/entry_points.txt"
-            ).decode()
+            # Dynamically find the .dist-info directory
+            dist_info_dir = next(
+                (name for name in zf.namelist() if name.endswith(".dist-info/entry_points.txt") and name.count('/') == 1),
+                None
+            )
+            if not dist_info_dir:
+                print("❌ entry_points.txt not found in any .dist-info directory")
+                return False
+            entry_points = zf.read(dist_info_dir).decode()
             if "geotoolkit = src.main:main" in entry_points:
                 print("✅ CLI entry point configured correctly")
             else:
