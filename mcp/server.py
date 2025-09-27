@@ -14,12 +14,27 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+# Optional MCP dependencies - graceful degradation if not available
 try:
-    from fastmcp import FastMCP, tool
-except Exception as exc:  # pragma: no cover
-    raise SystemExit(
-        "fastmcp is required. Install with: uv add fastmcp or pip install fastmcp"
-    ) from exc
+    from fastmcp import FastMCP, tool  # type: ignore
+
+    MCP_AVAILABLE = True
+except ImportError:  # pragma: no cover
+    # Create fallback classes for when MCP dependencies are not available
+    class FastMCP:  # type: ignore
+        def __init__(self, **kwargs: Any):
+            pass
+
+        def run(self) -> None:
+            print("⚠️ MCP dependencies not available. Install with: uv sync --extra mcp")
+
+    def tool():  # type: ignore
+        def decorator(func: Any) -> Any:
+            return func
+
+        return decorator
+
+    MCP_AVAILABLE = False
 
 APP_ROOT = Path(__file__).resolve().parents[1]
 
