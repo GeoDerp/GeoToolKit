@@ -3,7 +3,14 @@ name = "geotoolkit"
 version = "0.1.0"
 description = "Automated Security Scanner for Git Repositories"
 readme = "README.md"
-authors = []
+authors = [
+    {name = "GeoToolKit Contributors", email = "contact@geotoolkit.org"},
+]
+license = {file = "LICENSE"}
+homepage = "https://github.com/GeoDerp/GeoToolKit"
+repository = "https://github.com/GeoDerp/GeoToolKit"
+documentation = "https://github.com/GeoDerp/GeoToolKit#readme"
+keywords = ["security", "scanning", "vulnerability", "git", "repositories"]
 
 requires-python = ">=3.11"
 dependencies = [
@@ -21,12 +28,24 @@ dependencies = [
 ]
 classifiers = [
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12", 
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Topic :: Security",
     "Topic :: Software Development :: Quality Assurance",
-    "Development Status :: 3 - Alpha"
+    "Topic :: System :: Systems Administration",
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
 ]
+
+[project.urls]
+Homepage = "https://github.com/GeoDerp/GeoToolKit"
+Repository = "https://github.com/GeoDerp/GeoToolKit"
+Issues = "https://github.com/GeoDerp/GeoToolKit/issues"
+Changelog = "https://github.com/GeoDerp/GeoToolKit/releases"
+Documentation = "https://github.com/GeoDerp/GeoToolKit#readme"
 
 [build-system]
 requires = ["hatchling"]
@@ -37,6 +56,7 @@ package = true
 
 [project.scripts]
 geotoolkit = "src.main:main"
+geotoolkit-mcp = "mcp.server:main"
 
 [project.optional-dependencies]
 dev = [
@@ -57,11 +77,13 @@ test = [
 
 [tool.hatch.build]
 artifact-name = "geotoolkit-{version}"
-packages = ["src"]
+packages = ["src", "mcp"]
 
 [tool.hatch.build.targets.sdist]
 include = [
     "src/reporting/templates/report.md",
+    "mcp/manifest.json",
+    "mcp/README.md", 
     "tests",
 ]
 
