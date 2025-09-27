@@ -39,7 +39,9 @@ def test_semgrep_runner_success():
 
             findings = SemgrepRunner.run_scan("/mock/project/path")
 
-            default_rules_path = str(Path(__file__).parents[2] / "rules" / "semgrep" / "default.semgrep.yml")
+            default_rules_path = str(
+                Path(__file__).parents[2] / "rules" / "semgrep" / "default.semgrep.yml"
+            )
             mock_subprocess_run.assert_called_once_with(
                 [
                     "podman",

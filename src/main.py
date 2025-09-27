@@ -47,7 +47,9 @@ def main() -> None:
         print(f"Error: Invalid JSON in input file {args.input}")
         return
 
-    def _normalize_network_from_config(proj: dict[str, Any]) -> tuple[list[str], list[str], list[str]]:
+    def _normalize_network_from_config(
+        proj: dict[str, Any],
+    ) -> tuple[list[str], list[str], list[str]]:
         """
         Interpret a project's optional network_config structure into:
         - allow_hosts: list of "host:port" entries
@@ -133,10 +135,19 @@ def main() -> None:
 
             # If network_config is present, derive allowlists and ports from it
             if project_dict.get("network_config"):
-                derived_hosts, derived_ranges, derived_ports = _normalize_network_from_config(project_dict)
+                derived_hosts, derived_ranges, derived_ports = (
+                    _normalize_network_from_config(project_dict)
+                )
                 # Merge, giving precedence to explicitly provided top-level fields
-                allow_hosts = list({*(derived_hosts or []), *[str(x) for x in (allow_hosts or [])]})
-                allow_ip_ranges = list({*(derived_ranges or []), *[str(x) for x in (allow_ip_ranges or [])]})
+                allow_hosts = list(
+                    {*(derived_hosts or []), *[str(x) for x in (allow_hosts or [])]}
+                )
+                allow_ip_ranges = list(
+                    {
+                        *(derived_ranges or []),
+                        *[str(x) for x in (allow_ip_ranges or [])],
+                    }
+                )
                 top_ports = project_dict.get("ports", [])
                 if not top_ports:
                     project_dict["ports"] = derived_ports

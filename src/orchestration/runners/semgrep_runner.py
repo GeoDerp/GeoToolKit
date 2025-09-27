@@ -21,7 +21,9 @@ class SemgrepRunner:
         semgrep_pack = os.environ.get("SEMGREP_PACK")
         if semgrep_pack:
             network_mode = (
-                "--network=host" if os.environ.get("SEMGREP_ONLINE", "0") == "1" else "--network=none"
+                "--network=host"
+                if os.environ.get("SEMGREP_ONLINE", "0") == "1"
+                else "--network=none"
             )
             command = [
                 "podman",
@@ -47,11 +49,18 @@ class SemgrepRunner:
             ]
             config_path = next((c for c in candidate_configs if c.exists()), None)
             if not config_path:
-                default_rules = Path(__file__).parents[3] / "rules" / "semgrep" / "default.semgrep.yml"
+                default_rules = (
+                    Path(__file__).parents[3]
+                    / "rules"
+                    / "semgrep"
+                    / "default.semgrep.yml"
+                )
                 if default_rules.exists():
                     config_path = default_rules
                 else:
-                    print("Semgrep: No local or default config found. Skipping Semgrep.")
+                    print(
+                        "Semgrep: No local or default config found. Skipping Semgrep."
+                    )
                     return []
             src_mount = f"{project_path_obj}:/src:ro,Z"
             rules_mount = f"{config_path}:/rules.yml:ro,Z"

@@ -15,7 +15,9 @@ class OSVRunner:
     def run_scan(project_path: str) -> list[Finding]:
         """Runs OSV-Scanner on the specified project path and returns a list of findings."""
         project_path_obj = Path(project_path)
-        seccomp_path = str(Path(__file__).parents[3] / "seccomp" / "osv-scanner-seccomp.json")
+        seccomp_path = str(
+            Path(__file__).parents[3] / "seccomp" / "osv-scanner-seccomp.json"
+        )
 
         # SELinux relabel to ensure readability and enforce read-only
         src_mount = f"{project_path_obj}:/src:ro,Z"

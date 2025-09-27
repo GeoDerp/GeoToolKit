@@ -28,13 +28,11 @@ class Project(BaseModel):
     # Optional network configuration for DAST egress control and targeting
     network_allow_hosts: list[str] = Field(
         default_factory=list,
-        description=
-        "Optional list of allowed host:port entries (e.g., '127.0.0.1:8080', 'localhost:3000') for DAST.",
+        description="Optional list of allowed host:port entries (e.g., '127.0.0.1:8080', 'localhost:3000') for DAST.",
     )
     network_allow_ip_ranges: list[str] = Field(
         default_factory=list,
-        description=
-        "Optional list of CIDR ranges allowed for DAST egress (e.g., '127.0.0.1/32').",
+        description="Optional list of CIDR ranges allowed for DAST egress (e.g., '127.0.0.1/32').",
     )
     ports: list[str] = Field(
         default_factory=list,

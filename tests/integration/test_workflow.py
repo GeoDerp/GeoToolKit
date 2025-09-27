@@ -9,7 +9,6 @@ TEST_DIR = Path(__file__).parent
 PROJECTS_JSON_PATH = TEST_DIR / "test_projects.json"
 REPORT_MD_PATH = TEST_DIR / "test_report.md"
 DATABASE_PATH = TEST_DIR / "mock_db.tar.gz"
-ALLOWLIST_PATH = TEST_DIR / "test_network-allowlist.txt"
 
 # Mock content for projects.json
 # MOCK_PROJECTS_CONTENT will now be used as a template, and its 'url' fields
@@ -25,8 +24,7 @@ MOCK_PROJECTS_CONTENT = {
     ]
 }
 
-# Mock content for network-allowlist.txt
-MOCK_ALLOWLIST_CONTENT = "localhost:8080\nexample.com:443\n"
+# No separate network-allowlist file is used; allowlist is embedded in projects.json
 
 
 @pytest.fixture(scope="module")
@@ -48,10 +46,21 @@ def setup_test_environment(tmp_path_factory):  # Add tmp_path_factory as an argu
             )
 
     # Create a local copy of MOCK_PROJECTS_CONTENT and update URLs
+    # Embed network allowlist details and ports directly in projects.json
     local_projects_content = {
         "projects": [
-            {"url": str(mock_project_1_path)},
-            {"url": str(mock_project_2_path)},
+            {
+                "url": str(mock_project_1_path),
+                "ports": ["8080"],
+                "network_allow_hosts": ["localhost:8080", "127.0.0.1:8080"],
+                "network_allow_ip_ranges": ["127.0.0.1/32"],
+            },
+            {
+                "url": str(mock_project_2_path),
+                "ports": ["8080"],
+                "network_allow_hosts": ["localhost:8080", "127.0.0.1:8080"],
+                "network_allow_ip_ranges": ["127.0.0.1/32"],
+            },
         ]
     }
 
@@ -61,9 +70,7 @@ def setup_test_environment(tmp_path_factory):  # Add tmp_path_factory as an argu
     # Create mock database file (empty for now)
     DATABASE_PATH.touch()
 
-    # Create mock network-allowlist.txt
-    with open(ALLOWLIST_PATH, "w") as f:
-        f.write(MOCK_ALLOWLIST_CONTENT)
+    # No network-allowlist file needed; configuration is embedded above
 
     yield  # Run tests
 
@@ -71,7 +78,7 @@ def setup_test_environment(tmp_path_factory):  # Add tmp_path_factory as an argu
     PROJECTS_JSON_PATH.unlink(missing_ok=True)
     REPORT_MD_PATH.unlink(missing_ok=True)
     DATABASE_PATH.unlink(missing_ok=True)
-    ALLOWLIST_PATH.unlink(missing_ok=True)
+    # No allowlist file to clean up
     # tmp_path_factory automatically cleans up the temporary directory (temp_repos_dir)
     # and its contents, so explicit shutil.rmtree calls for mock_project_1_path
     # and mock_project_2_path are no longer needed.
@@ -108,8 +115,6 @@ def test_main_workflow_integration(setup_test_environment):
         str(REPORT_MD_PATH),
         "--database-path",
         str(DATABASE_PATH),
-        "--network-allowlist",
-        str(ALLOWLIST_PATH),
     ]
 
     print(f"Running command: {' '.join(command)}")

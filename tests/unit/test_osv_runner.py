@@ -39,7 +39,9 @@ def test_osv_runner_success():
 
         findings = OSVRunner.run_scan("/mock/project/path")
 
-        seccomp_path = str(Path(__file__).parents[2] / "seccomp" / "osv-scanner-seccomp.json")
+        seccomp_path = str(
+            Path(__file__).parents[2] / "seccomp" / "osv-scanner-seccomp.json"
+        )
         mock_subprocess_run.assert_called_once_with(
             [
                 "podman",

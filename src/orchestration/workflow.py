@@ -31,11 +31,14 @@ class Workflow:
         url_str = str(project.url)
         # If target is a live app URL, run DAST-only and skip cloning
         if url_str.startswith(("http://", "https://")) and not any(
-            domain in url_str.lower() for domain in ["github.com", "gitlab.com", "bitbucket.org"]
+            domain in url_str.lower()
+            for domain in ["github.com", "gitlab.com", "bitbucket.org"]
         ):
             print(f"Detected application URL, running DAST-only: {project.url}")
             try:
-                zap_findings = ZapRunner.run_scan(url_str, network_allowlist=network_allowlist)
+                zap_findings = ZapRunner.run_scan(
+                    url_str, network_allowlist=network_allowlist
+                )
                 all_findings.extend(zap_findings)
                 scan.status = "completed"
             except Exception as e:

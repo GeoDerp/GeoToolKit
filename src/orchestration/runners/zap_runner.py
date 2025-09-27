@@ -25,9 +25,7 @@ class ZapRunner:
         seccomp_path = Path(__file__).parents[3] / "seccomp" / "zap-seccomp.json"
         container_name = f"zap-scanner-{int(time.time())}"
         zap_port = os.environ.get("ZAP_PORT", "8080")
-        zap_image = os.environ.get(
-            "ZAP_IMAGE", "ghcr.io/zaproxy/zaproxy:latest"
-        )
+        zap_image = os.environ.get("ZAP_IMAGE", "ghcr.io/zaproxy/zaproxy:latest")
         zap_base_url_override = os.environ.get("ZAP_BASE_URL")
         skip_container = os.environ.get("ZAP_SKIP_CONTAINER", "0").lower() in (
             "1",
@@ -117,10 +115,14 @@ class ZapRunner:
             # Wait for ZAP API to be ready (skip in tests where requests is mocked)
             if "PYTEST_CURRENT_TEST" not in os.environ:
                 ready = False
-                deadline = time.time() + float(os.environ.get("ZAP_READY_TIMEOUT", "60"))
+                deadline = time.time() + float(
+                    os.environ.get("ZAP_READY_TIMEOUT", "60")
+                )
                 while time.time() < deadline:
                     try:
-                        r = requests.get(f"{zap_base_url}/JSON/core/view/version/", timeout=5)
+                        r = requests.get(
+                            f"{zap_base_url}/JSON/core/view/version/", timeout=5
+                        )
                         r.raise_for_status()
                         ready = True
                         break
@@ -131,7 +133,11 @@ class ZapRunner:
                     # Try to print container logs for diagnostics
                     if container_started:
                         try:
-                            logs = subprocess.run(["podman", "logs", container_name], capture_output=True, text=True)
+                            logs = subprocess.run(
+                                ["podman", "logs", container_name],
+                                capture_output=True,
+                                text=True,
+                            )
                             if logs.stdout:
                                 print("--- ZAP Container Logs (stdout) ---")
                                 print(logs.stdout[-4000:])
@@ -169,7 +175,11 @@ class ZapRunner:
             # Spider the target URL
             print(f"Spidering target: {mapped_target_url}")
             spider_url = f"{zap_base_url}/JSON/spider/action/scan/"
-            spider_params = {"url": mapped_target_url, "maxChildren": "10", "recurse": "true"}
+            spider_params = {
+                "url": mapped_target_url,
+                "maxChildren": "10",
+                "recurse": "true",
+            }
             response = requests.get(spider_url, params=spider_params, timeout=30)
             response.raise_for_status()
             spider_scan_id = response.json().get("scan", "0")
