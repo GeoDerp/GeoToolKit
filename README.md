@@ -110,6 +110,9 @@ An optional FastMCP server is provided to programmatically manage `projects.json
 ```bash
 # Start MCP server (requires fastmcp)
 uv run python mcp/server.py
+
+# Or invoke tools directly from Python
+uv run python -c "import mcp.server as s; print(s.createProjects([{ 'url': 'https://github.com/fastapi/fastapi', 'name': 'fastapi', 'network_config': { 'ports': ['8000'], 'protocol': 'http', 'allowed_egress': { 'localhost': ['8000'] } } }]))"
 ```
 
 Tools:
@@ -126,7 +129,12 @@ Quick note on `network_config` interpretation:
 Try with the included `test-projects.json` to validate Python and Go scanning quickly:
 
 ```bash
+# Quick CLI smoke test using included test-projects.json
 python src/main.py --input test-projects.json --output quick-report.md --database-path data/offline-db.tar.gz
+
+# End-to-end validation helpers
+python scripts/quick_validation.py
+python scripts/validation_executor.py
 ```
 
 ### Troubleshooting

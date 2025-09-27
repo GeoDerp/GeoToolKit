@@ -2,15 +2,18 @@ name: Python CI Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, Dev]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 env:
   PYTHON_APP_SOURCE_DIR: "."
   PYTEST_COVERAGE_XML_FILE_NAME: "coverage-reports/coverage-pytest.xml"
   PYTEST_COVERAGE_THRESHOLD_PERCENT: 80
   UV_SYSTEM_PYTHON: 1
+  # Security-focused environment variables
+  SEMGREP_RULES_AUTO_UPDATE: "false"  # Use pinned rules for consistency
+  TRIVY_OFFLINE_SCAN: "true"          # Align with offline scanning capability
 
 jobs:
   build:
@@ -38,3 +41,59 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           docker_image_name: ${{ github.event.repository.name }}
           pytest_coverage_threshold_percent: ${{ env.PYTEST_COVERAGE_THRESHOLD_PERCENT }}
+
+  mcp-server:
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+      
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+      
+      - name: Validate MCP manifest
+        shell: bash
+        run: |
+          uv run python -c 'import json; m=json.load(open("mcp/manifest.json")); print(f"Manifest OK: {m[\"name\"]} ({m[\"app_id\"]})")'
+
+      - name: Smoke test MCP tools (createProjects, normalizeProjects)
+        shell: bash
+        run: |
+          uv run python -c 'import sys, os, json; sys.path.append("mcp"); from server import createProjects, normalizeProjects; \
+          payload=[{"name":"ci-proj","url":"https://example.com/repo.git","network_config":{"allowed_egress":{"example.com":["80","443"]}}}]; \
+          res=createProjects(payload, outputPath="projects.ci.json"); assert os.path.exists(res["path"]); print("createProjects OK ->", res["path"]); \
+          res2=normalizeProjects("projects.ci.json"); print("normalizeProjects OK ->", json.dumps(res2)[:200])'
+
+      - name: Smoke test MCP runScan
+        shell: bash
+        run: |
+          printf '{"projects":[{"url":".","name":"local"}]}' > projects.smoke.json
+          touch data/offline-db.tar.gz
+          uv run python - <<'PY'
+          import sys, pathlib
+          sys.path.append('mcp')
+          from server import runScan
+          res = runScan('projects.smoke.json','report.smoke.md','data/offline-db.tar.gz')
+          print('runScan exitCode:', res.get('exitCode'))
+          print('Report len:', len((pathlib.Path('report.smoke.md').read_text())))
+          PY
+
+      - name: CLI smoke test
+        shell: bash
+        run: |
+          uv run python src/main.py --input test-projects.json --output ci-quick-report.md --database-path data/offline-db.tar.gz || true
