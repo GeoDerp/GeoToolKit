@@ -1,0 +1,88 @@
+{
+    "folders": [
+        {
+            "name": "GeoToolKit",
+            "path": "."
+        }
+    ],
+    "settings": {
+        "python.defaultInterpreterPath": "./.venv/bin/python",
+        "python.terminal.activateEnvironment": true,
+        "github.copilot.enable": {
+            "*": true,
+            "python": true,
+            "dockerfile": true,
+            "yaml": true,
+            "json": true,
+            "markdown": true
+        },
+        "github.copilot.editor.enableAutoCompletions": true,
+        "files.associations": {
+            "*.yml": "yaml",
+            "Dockerfile*": "dockerfile",
+            ".copilotignore": "gitignore"
+        }
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "Install Dependencies",
+                "type": "shell",
+                "command": "uv sync --dev",
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                }
+            },
+            {
+                "label": "Run Tests",
+                "type": "shell",
+                "command": "uv run pytest tests/ -v",
+                "group": "test",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                }
+            },
+            {
+                "label": "Lint Code",
+                "type": "shell",
+                "command": "uv run ruff check src tests",
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                }
+            },
+            {
+                "label": "Format Code",
+                "type": "shell",
+                "command": "uv run ruff format src tests",
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                }
+            }
+        ]
+    },
+    "extensions": {
+        "recommendations": [
+            "GitHub.copilot",
+            "GitHub.copilot-chat",
+            "ms-python.python",
+            "ms-python.debugpy",
+            "ms-python.mypy-type-checker"
+        ]
+    }
+}

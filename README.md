@@ -227,6 +227,32 @@ For manual database configuration:
 
 ## 🛠️ Development
 
+### GitHub Copilot Setup
+
+This project is configured with GitHub Copilot recommendations for enhanced development experience:
+
+1. **Install recommended extensions**: When you open this project in VSCode, you'll be prompted to install recommended extensions including:
+   - GitHub Copilot (`GitHub.copilot`)
+   - GitHub Copilot Chat (`GitHub.copilot-chat`)
+   - Python development tools
+   - Security scanning tools
+
+2. **Copilot configuration**: The project includes optimized Copilot settings in `.vscode/settings.json` for:
+   - Enhanced Python code suggestions
+   - Security-focused recommendations
+   - Project-specific context awareness
+
+3. **Project instructions**: GitHub Copilot will use the instructions in `.github/copilot-instructions.md` to provide better context-aware suggestions for this security scanning project.
+
+4. **Copilot ignore patterns**: Sensitive files and build artifacts are excluded from Copilot analysis via `.copilotignore`.
+
+5. **Verification**: Run the verification script to ensure proper setup:
+   ```bash
+   python3 scripts/verify_copilot_setup.py
+   ```
+
+For detailed setup instructions, see [docs/COPILOT_SETUP.md](docs/COPILOT_SETUP.md).
+
 ### Running Tests
 
 ```bash
