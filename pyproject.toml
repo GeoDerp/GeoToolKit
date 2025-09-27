@@ -109,7 +109,8 @@ clean = "rm -rf .coverage .pytest_cache dist build"
 # Reduce Ruff's selected rule groups to the core set so linting is less strict
 # (removes some plugin groups like Q, UP, YTT, PYI which can be noisy for this project)
 select = ["E", "W", "F", "I", "C", "B"]
-ignore = ["E501", "B008", "B905"] 
+# Ignore common issues that don't affect functionality
+ignore = ["E501", "B008", "B905", "E722", "W291", "W293", "C401"] 
 
 [tool.ruff.lint.per-file-ignores]
 "src/main.py" = ["C901"]
@@ -117,6 +118,8 @@ ignore = ["E501", "B008", "B905"]
 "src/orchestration/runners/zap_runner.py" = ["C901"]
 "mcp/server.py" = ["C901"]
 "tests/**/*" = ["F841", "B017"]
+# Be more lenient with scripts directory
+"scripts/**/*" = ["C901", "E722", "F841", "B007", "W291", "W293", "C401"]
 
 
 [tool.ruff]

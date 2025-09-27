@@ -367,3 +367,18 @@ Current version: **v0.1.0** (Beta)
 ---
 
 **⚠️ Security Notice**: This tool is designed for security testing of software you own or have permission to test. Always ensure you have proper authorization before scanning any repositories or applications.
+
+## 🙌 Shoutouts
+
+Big thanks to the open-source security scanners and projects that make GeoToolKit possible:
+
+- Semgrep — powerful, fast SAST (https://semgrep.dev)
+- Trivy — container and dependency SCA from Aqua Security (https://github.com/aquasecurity/trivy)
+- OSV-Scanner — offline scanner that uses Google’s OSV (Open Source Vulnerabilities) data to detect known vulnerabilities in packages and SBOMs (https://github.com/ossf/osv-scanner)
+- OWASP ZAP — DAST tooling from the OWASP project (https://www.zaproxy.org/)
+
+If you've contributed integrations for other scanners or tools, thank you — please add them to this list by submitting a PR.
+
+## 🤖 AI assistance
+
+This project was developed with assistance from AI tools to speed up development and help generate documentation and examples. All code and contributions were reviewed by human maintainers. If you have questions about any part of the codebase or believe an AI-assisted change needs clarification, please open an issue or a pull request so maintainers can review and address it.
