@@ -246,13 +246,16 @@ jobs:
           EOF
           
           # Create the release with all artifacts
-          gh release create "${RELEASE_TAG}" \
+          if ! gh release create "${RELEASE_TAG}" \
             --title "🛡️ GeoToolKit ${RELEASE_TAG}" \
             --notes-file release-notes.md \
             --prerelease \
             dist/*.whl \
             dist/*.tar.gz \
-            "${MCP_ARCHIVE}" || echo "Release creation failed, but continuing..."
+            "${MCP_ARCHIVE}"; then
+            echo "❌ Release creation failed. See above for details."
+            exit 1
+          fi
             
       - name: Test CLI package installation
         run: |
