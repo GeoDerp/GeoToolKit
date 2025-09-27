@@ -1,12 +1,13 @@
 import argparse
 import json
+from typing import Any
 
-from models.project import Project
-from orchestration.workflow import Workflow
-from reporting.report import ReportGenerator
+from src.models.project import Project
+from src.orchestration.workflow import Workflow
+from src.reporting.report import ReportGenerator
 
 
-def main():
+def main() -> None:
     """Main entry point for the Automated Malicious Code Scanner CLI."""
     parser = argparse.ArgumentParser(description="Automated Malicious Code Scanner")
     parser.add_argument(
@@ -35,7 +36,7 @@ def main():
         print(f"Network allow-list: {args.network_allowlist}")
 
     # 1. Read projects.json
-    projects_data: dict[str, list[dict[str, str]]] = {}
+    projects_data: dict[str, list[dict[str, Any]]] = {}
     try:
         with open(args.input) as f:
             projects_data = json.load(f)
@@ -46,17 +47,108 @@ def main():
         print(f"Error: Invalid JSON in input file {args.input}")
         return
 
+    def _normalize_network_from_config(proj: dict[str, Any]) -> tuple[list[str], list[str], list[str]]:
+        """
+        Interpret a project's optional network_config structure into:
+        - allow_hosts: list of "host:port" entries
+        - allow_ip_ranges: list of CIDR strings
+        - ports: list of port strings
+
+        Expected schema of network_config:
+          {
+            "ports": ["3000", "8080"],
+            "protocol": "http|https",
+            "health_endpoint": "/health",
+            "startup_time_seconds": 30,
+            "allowed_egress": {
+              "localhost": ["3000"],
+              "192.168.1.0/24": ["8080"],
+              "external_hosts": ["example.com"]
+            }
+          }
+        """
+        allow_hosts: set[str] = set()
+        allow_ip_ranges: set[str] = set()
+        ports: list[str] = [str(p) for p in (proj.get("ports") or [])]
+
+        net_cfg = proj.get("network_config") or {}
+        cfg_ports = [str(p) for p in (net_cfg.get("ports") or [])]
+        # if top-level ports is empty, use network_config.ports
+        if not ports:
+            ports = cfg_ports
+        protocol = (net_cfg.get("protocol") or "").lower()
+        default_port = "443" if protocol == "https" else "80"
+        # Build allowlist from allowed_egress
+        allowed = net_cfg.get("allowed_egress") or {}
+        # External hosts list (no specific ports attached). Apply cfg ports or default
+        external_hosts = allowed.get("external_hosts") or []
+        if isinstance(external_hosts, str):
+            external_hosts = [external_hosts]
+        for host in external_hosts:
+            host = str(host).strip()
+            if not host:
+                continue
+            if ports:
+                for p in ports:
+                    allow_hosts.add(f"{host}:{str(p).strip()}")
+            else:
+                allow_hosts.add(f"{host}:{default_port}")
+        # Other keys: hostname/IP literal/CIDR -> port list
+        for key, val in allowed.items():
+            if key == "external_hosts":
+                continue
+            # value is list of ports (can be empty)
+            port_list = val if isinstance(val, list) else ([val] if val else [])
+            port_list = [str(p).strip() for p in port_list if str(p).strip()]
+            if "/" in key:
+                # CIDR range
+                allow_ip_ranges.add(key)
+                # We don't encode ports with CIDR in allowlist strings; keep as ranges for runners
+            else:
+                # Treat as host literal; combine with specified ports or fallback to cfg ports/default
+                ports_for_host = port_list or (ports if ports else [default_port])
+                for p in ports_for_host:
+                    allow_hosts.add(f"{key}:{p}")
+                # Convenience: if host looks like 0.0.0.0, also include localhost/127.0.0.1
+                if key in {"0.0.0.0", "::", "::0"} and ports_for_host:
+                    for p in ports_for_host:
+                        allow_hosts.add(f"localhost:{p}")
+                        allow_hosts.add(f"127.0.0.1:{p}")
+
+        return sorted(allow_hosts), sorted(allow_ip_ranges), [str(p) for p in ports]
+
     projects: list[Project] = []
     for project_dict in projects_data.get("projects", []):
         try:
             # Extract name from dict or derive from URL
             name = project_dict.get("name", project_dict["url"].split("/")[-1])
 
+            # Coerce allowlist fields to lists of strings if provided as single strings
+            allow_hosts = project_dict.get("network_allow_hosts", [])
+            if isinstance(allow_hosts, str):
+                allow_hosts = [allow_hosts]
+            allow_ip_ranges = project_dict.get("network_allow_ip_ranges", [])
+            if isinstance(allow_ip_ranges, str):
+                allow_ip_ranges = [allow_ip_ranges]
+
+            # If network_config is present, derive allowlists and ports from it
+            if project_dict.get("network_config"):
+                derived_hosts, derived_ranges, derived_ports = _normalize_network_from_config(project_dict)
+                # Merge, giving precedence to explicitly provided top-level fields
+                allow_hosts = list({*(derived_hosts or []), *[str(x) for x in (allow_hosts or [])]})
+                allow_ip_ranges = list({*(derived_ranges or []), *[str(x) for x in (allow_ip_ranges or [])]})
+                top_ports = project_dict.get("ports", [])
+                if not top_ports:
+                    project_dict["ports"] = derived_ports
+
             project = Project(
                 url=project_dict["url"],
                 name=name,
                 language=project_dict.get("language"),
                 description=project_dict.get("description"),
+                network_allow_hosts=[str(x) for x in (allow_hosts or [])],
+                network_allow_ip_ranges=[str(x) for x in (allow_ip_ranges or [])],
+                ports=[str(p) for p in (project_dict.get("ports", []) or [])],
             )
             projects.append(project)
         except KeyError as e:
@@ -68,12 +160,12 @@ def main():
         print("No valid projects found to scan. Exiting.")
         return
 
-    # Prepare optional network allowlist entries
-    allowlist_entries: list[str] | None = None
+    # Prepare optional network allowlist entries (global)
+    global_allowlist_entries: list[str] | None = None
     if args.network_allowlist:
         try:
             with open(args.network_allowlist) as f:
-                allowlist_entries = [
+                global_allowlist_entries = [
                     line.strip()
                     for line in f
                     if line.strip() and not line.strip().startswith("#")
@@ -84,8 +176,33 @@ def main():
     # 2. Run scans for each project
     all_scans = []
     for project in projects:
+        # Build an allowlist from the project's own fields if no global allowlist provided
+        per_project_allowlist: list[str] | None = None
+        if global_allowlist_entries is not None:
+            per_project_allowlist = global_allowlist_entries
+        else:
+            # Combine host:port entries from network_allow_hosts and ports on localhost
+            combined: set[str] = set()
+            try:
+                for entry in getattr(project, "network_allow_hosts", []) or []:
+                    if isinstance(entry, str) and entry.strip():
+                        combined.add(entry.strip())
+                # Include any CIDR ranges from network_allow_ip_ranges for runner awareness
+                for cidr in getattr(project, "network_allow_ip_ranges", []) or []:
+                    if isinstance(cidr, str) and cidr.strip():
+                        combined.add(cidr.strip())
+                # If ports are provided, allow localhost for each
+                for p in getattr(project, "ports", []) or []:
+                    p_str = str(p).strip()
+                    if p_str:
+                        combined.add(f"127.0.0.1:{p_str}")
+                        combined.add(f"localhost:{p_str}")
+            except Exception:
+                pass
+            per_project_allowlist = sorted(combined) if combined else None
+
         scan_result = Workflow.run_project_scan(
-            project, network_allowlist=allowlist_entries
+            project, network_allowlist=per_project_allowlist
         )
         all_scans.append(scan_result)
 

@@ -15,7 +15,7 @@
     "syscalls": [
         {
             "names": [
-                "accept", "access", "arch_prctl", "bind", "brk", "capget", "chdir", "chmod", "chown",
+                "accept", "access", "arch_prctl", "bind", "brk", "capget", "capset", "chdir", "chmod", "chown",
                 "clone", "close", "connect", "creat", "dup", "dup2", "epoll_create", "epoll_ctl",
                 "epoll_wait", "execve", "exit", "exit_group", "fchdir", "fchmod", "fchown", "fcntl",
                 "fstat", "fstatfs", "futex", "getcwd", "getdents", "getegid", "geteuid", "getgid",
@@ -25,7 +25,7 @@
                 "openat", "pipe", "poll", "prctl", "read", "readlink", "recvfrom", "rt_sigaction",
                 "rt_sigprocmask", "rt_sigreturn", "sched_getaffinity", "select", "sendto",
                 "set_robust_list", "set_tid_address", "setgid", "setgroups", "setrlimit", "setsid",
-                "setsockopt", "setuid", "socket", "stat", "statfs", "symlink", "tgkill", "time",
+                "setsockopt", "setuid", "setresgid", "setresuid", "socket", "stat", "statfs", "symlink", "tgkill", "time",
                 "times", "umask", "unlink", "utimensat", "wait4", "write"
             ],
             "action": "SCMP_ACT_ALLOW"

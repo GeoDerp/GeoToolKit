@@ -25,9 +25,25 @@ class Project(BaseModel):
         description="A list of programming languages detected in the project.",
     )
 
+    # Optional network configuration for DAST egress control and targeting
+    network_allow_hosts: list[str] = Field(
+        default_factory=list,
+        description=
+        "Optional list of allowed host:port entries (e.g., '127.0.0.1:8080', 'localhost:3000') for DAST.",
+    )
+    network_allow_ip_ranges: list[str] = Field(
+        default_factory=list,
+        description=
+        "Optional list of CIDR ranges allowed for DAST egress (e.g., '127.0.0.1/32').",
+    )
+    ports: list[str] = Field(
+        default_factory=list,
+        description="Optional list of ports relevant for the project's HTTP services (strings to avoid type issues).",
+    )
+
     @field_validator("url")
     @classmethod
-    def validate_url_or_path(cls, v):
+    def validate_url_or_path(cls, v: str) -> str:
         """Allow both HTTP URLs and local file paths."""
         if isinstance(v, str) and v.strip():  # Must be non-empty string
             # Check if it's a local path

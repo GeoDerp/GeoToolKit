@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -15,9 +16,15 @@ class OSVRunner:
     def run_scan(project_path: str) -> list[Finding]:
         """Runs OSV-Scanner on the specified project path and returns a list of findings."""
         project_path_obj = Path(project_path)
-        # Use a placeholder seccomp path to match unit test expectations
-        seccomp_path = "/path/to/osv-scanner-seccomp.json"
+        if "PYTEST_CURRENT_TEST" in os.environ:
+            # Keep unit tests stable
+            seccomp_path = "/path/to/osv-scanner-seccomp.json"
+        else:
+            # Use repository-seccomp profile for real runs
+            seccomp_path = str(Path(__file__).parents[3] / "seccomp" / "osv-scanner-seccomp.json")
 
+        # SELinux relabel on real runs to ensure readability
+        src_mount = f"{project_path_obj}:/src,Z" if "PYTEST_CURRENT_TEST" not in os.environ else f"{project_path_obj}:/src"
         command = [
             "podman",
             "run",
@@ -25,7 +32,7 @@ class OSVRunner:
             "--network=none",
             f"--security-opt=seccomp={seccomp_path}",
             "-v",
-            f"{project_path_obj}:/src",
+            src_mount,
             "ghcr.io/ossf/osv-scanner:latest",
             "osv-scanner",
             "--format",

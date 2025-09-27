@@ -28,10 +28,23 @@ class Workflow:
         print(f"Starting scan for project: {project.name} ({project.url})")
         print(f"Project language: {project.language or 'Auto-detect'}")
 
-        # Check if URL is a local path or remote repository
-        if str(project.url).startswith("/") or Path(str(project.url)).exists():
+        url_str = str(project.url)
+        # If target is a live app URL, run DAST-only and skip cloning
+        if url_str.startswith(("http://", "https://")) and not any(
+            domain in url_str.lower() for domain in ["github.com", "gitlab.com", "bitbucket.org"]
+        ):
+            print(f"Detected application URL, running DAST-only: {project.url}")
+            try:
+                zap_findings = ZapRunner.run_scan(url_str, network_allowlist=network_allowlist)
+                all_findings.extend(zap_findings)
+                scan.status = "completed"
+            except Exception as e:
+                print(f"Error during DAST scan for {project.url}: {e}")
+                scan.status = "failed"
+        # Check if URL is a local path
+        elif url_str.startswith("/") or Path(url_str).exists():
             # Use local path directly
-            project_path_str = str(project.url)
+            project_path_str = url_str
             print(f"Using local path: {project_path_str}")
             try:
                 all_findings.extend(

@@ -1,14 +1,6 @@
 # GeoToolKit: Automated Security Scanner 🛡️
 
-[![License: MIT](https://img.shields.io/badge/License-M3. **View the results**: Open `security-report.md` in your favorite editor
-
-### Quick Validation
-
-Try with the included `test-projects.json` to validate Python and Go scanning quickly:
-
-```bash
-python src/main.py --input test-projects.json --output quick-report.md --database-path data/offline-db.tar.gz
-```ps://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 
 GeoToolKit is a comprehensive, offline software assurance toolkit designed to scan open-source Git repositories for malicious code and vulnerabilities. It orchestrates industry-standard security scanning tools, running each in secure, isolated Podman containers for maximum safety and reliability.
@@ -86,14 +78,18 @@ GeoToolKit is a comprehensive, offline software assurance toolkit designed to sc
 
 ### Basic Usage
 
-1. **Configure projects** in `projects.json`:
+1. **Configure projects** in `projects.json` (with optional inline network allowlist for DAST):
    ```json
    {
      "projects": [
        {
          "url": "https://github.com/fastapi/fastapi",
          "name": "fastapi",
-         "language": "Python"
+         "language": "Python",
+         "description": "Modern, fast web framework",
+         "ports": ["8000"],
+         "network_allow_hosts": ["127.0.0.1:8000", "localhost:8000"],
+         "network_allow_ip_ranges": ["127.0.0.1/32"]
        }
      ]
    }
@@ -106,6 +102,24 @@ GeoToolKit is a comprehensive, offline software assurance toolkit designed to sc
      --output security-report.md \
      --database-path data/offline-db.tar.gz
    ```
+
+### Model Context Protocol (MCP) Server
+
+An optional FastMCP server is provided to programmatically manage `projects.json` and run scans. It can interpret `network_config` blocks into explicit allowlists for DAST. See the full guide in `mcp/README.md`.
+
+```bash
+# Start MCP server (requires fastmcp)
+uv run python mcp/server.py
+```
+
+Tools:
+- `createProjects(projects, outputPath?)` → writes projects.json and normalizes any `network_config` into `network_allow_hosts`, `network_allow_ip_ranges`, and `ports`
+- `normalizeProjects(inputPath?, outputPath?)` → reads an existing projects.json and derives explicit allowlists from `network_config`
+- `runScan(inputPath?, outputPath?, databasePath?)` → runs the scan and returns report text
+
+Quick note on `network_config` interpretation:
+- `allowed_egress.external_hosts` are turned into `host:port` using `network_config.ports` or protocol defaults (80/443)
+- Other keys under `allowed_egress` are treated as hostnames/IPs; keys containing `/` are treated as CIDRs and added to `network_allow_ip_ranges`
 
 ### Validation (Multi-language quick test)
 
@@ -122,7 +136,7 @@ python src/main.py --input test-projects.json --output quick-report.md --databas
   - `docker.io/semgrep/semgrep`
   - `docker.io/aquasec/trivy`
   - `ghcr.io/ossf/osv-scanner:latest`
-  - `docker.io/owasp/zap2docker-stable:latest`
+  - `ghcr.io/zaproxy/zaproxy:latest`
 - For strictly offline environments, consider mirroring images to a local registry and using Podman’s `--registries-conf`.
 
 3. **View the results**: Open `security-report.md` in your favorite editor

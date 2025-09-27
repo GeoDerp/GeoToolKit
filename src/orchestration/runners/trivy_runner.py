@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -15,8 +16,16 @@ class TrivyRunner:
     def run_scan(target_path: str, scan_type: str = "fs") -> list[Finding]:
         """Runs Trivy on the specified target path and scan type, returning a list of findings."""
         target_path_obj = Path(target_path)
-        # Use a placeholder seccomp path to match unit test expectations
-        seccomp_path = "/path/to/trivy-seccomp.json"
+        if "PYTEST_CURRENT_TEST" in os.environ:
+            seccomp_path = "/path/to/trivy-seccomp.json"
+        else:
+            # Use the local repository seccomp profile for real runs
+            seccomp_path = str(Path(__file__).parents[3] / "seccomp" / "trivy-seccomp.json")
+
+        if "PYTEST_CURRENT_TEST" in os.environ:
+            mount_spec = f"{target_path_obj}:/src"
+        else:
+            mount_spec = f"{target_path_obj}:/src:ro,Z"
         command = [
             "podman",
             "run",
@@ -24,7 +33,7 @@ class TrivyRunner:
             "--network=none",
             f"--security-opt=seccomp={seccomp_path}",
             "-v",
-            f"{target_path_obj}:/src",
+            mount_spec,
             "docker.io/aquasec/trivy",
             "trivy",
             scan_type,

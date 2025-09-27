@@ -15,6 +15,9 @@ dependencies = [
     "Jinja2>=3.1.4",
     "requests>=2.32.3",
     "gitpython>=3.1.0",
+    "fastmcp>=0.1.3",
+    "pytest>=8.3.5",
+    "psutil>=7.1.0",
 ]
 classifiers = [
     "Programming Language :: Python :: 3.11",
@@ -41,7 +44,8 @@ dev = [
     "mypy>=1.6.0",
     "pytest>=7.3.1",
     "hatchling",
-    "types-waitress"
+    "types-waitress",
+    "types-requests"
 ]
 test = [
     "ruff>=0.11.0",
@@ -80,6 +84,13 @@ clean = "rm -rf .coverage .pytest_cache dist build"
 select = ["E", "W", "F", "I", "C", "B", "Q", "UP", "YTT", "PYI"]
 ignore = ["E501", "B008", "B905"] 
 
+[tool.ruff.lint.per-file-ignores]
+"src/main.py" = ["C901"]
+"src/orchestration/parser.py" = ["C901"]
+"src/orchestration/runners/zap_runner.py" = ["C901"]
+"mcp/server.py" = ["C901"]
+"tests/**/*" = ["F841", "B017"]
+
 
 [tool.ruff]
 target-version = "py311" 
@@ -102,3 +113,10 @@ omit = ["src/reporting/templates/*"]
 
 [tool.coverage.paths]
 source = ["src"]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.15.0",
+    "ruff>=0.11.2",
+    "types-requests>=2.32.4.20250913",
+]

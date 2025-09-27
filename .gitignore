@@ -1,4 +1,41 @@
-# Python bytecode and caches
+# Python bytecode and extensions
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environments and local env files
+.venv/
+.env
+.env.*
+
+# Test and tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Production test outputs
+production_validation_results.json
+load_test_results.json
+
+# Logs from runs (keep directory with .gitkeep)
+logs/*
+!logs/.gitkeep
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# OS / Editor cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/# Python bytecode and caches
 __pycache__/
 *.py[cod]
 *$py.class
@@ -57,6 +94,14 @@ validation-report.md
 multi-language-report.md
 quick-report.md
 security-report.md
+## GeoToolKit generated reports (root)
+dast-report.md
+multi-report.md
+validation-log.md
+
+## GeoToolKit report directories
+validation/reports/
+validation/validation-log.md
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

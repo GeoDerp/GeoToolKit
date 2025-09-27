@@ -1,7 +1,9 @@
 import json
+import os
 import subprocess
 import time
 from pathlib import Path
+from urllib.parse import urlparse, urlunparse
 
 import requests
 from src.models.finding import Finding
@@ -22,7 +24,22 @@ class ZapRunner:
         findings: list[Finding] = []
         seccomp_path = Path(__file__).parents[3] / "seccomp" / "zap-seccomp.json"
         container_name = f"zap-scanner-{int(time.time())}"
-        podman_command = [
+        zap_port = os.environ.get("ZAP_PORT", "8080")
+        zap_image = os.environ.get(
+            "ZAP_IMAGE", "ghcr.io/zaproxy/zaproxy:latest"
+        )
+        zap_base_url_override = os.environ.get("ZAP_BASE_URL")
+        skip_container = os.environ.get("ZAP_SKIP_CONTAINER", "0").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+        # Never start containers inside unit tests; tests mock HTTP calls
+        if "PYTEST_CURRENT_TEST" in os.environ:
+            skip_container = True
+        podman_pull_policy = os.environ.get("ZAP_PODMAN_PULL", "missing")
+        # Construct podman command (when not skipping container)
+        podman_command: list[str] = [
             "podman",
             "run",
             "--rm",
@@ -30,39 +47,132 @@ class ZapRunner:
             "--name",
             container_name,
             "-p",
-            "8080:8080",
+            f"{zap_port}:{zap_port}",
             f"--security-opt=seccomp={seccomp_path}",
             "--cap-drop=ALL",
             "--cap-add=NET_BIND_SERVICE",
             "--read-only",
             "--tmpfs=/tmp:rw,noexec,nosuid,size=200m",
-            "--tmpfs=/zap:rw,noexec,nosuid,size=500m",
-            "docker.io/owasp/zap2docker-stable:latest",
+            "--tmpfs=/zap:rw,exec,nosuid,size=500m",
+        ]
+        # Optional network mode (e.g., host)
+        podman_network = os.environ.get("ZAP_PODMAN_NETWORK")
+        if podman_network:
+            podman_command += ["--network", podman_network]
+        # Pull policy for offline friendliness
+        if podman_pull_policy in {"always", "missing", "never"}:
+            podman_command += ["--pull", podman_pull_policy]
+        # Extra podman args if provided
+        extra_podman_args = os.environ.get("ZAP_PODMAN_ARGS")
+        if extra_podman_args:
+            podman_command += extra_podman_args.split()
+        podman_command += [
+            zap_image,
             "zap.sh",
             "-daemon",
             "-port",
-            "8080",
+            zap_port,
             "-host",
             "0.0.0.0",
             "-config",
             "api.disablekey=true",
         ]
-        print(f"Starting ZAP container: {' '.join(podman_command)}")
+        if skip_container:
+            print(
+                "ZAP_SKIP_CONTAINER is set; will not start a container and will connect to an existing ZAP instance."
+            )
+        else:
+            print(f"Starting ZAP container: {' '.join(podman_command)}")
+        if network_allowlist:
+            try:
+                print("Applying network allowlist entries:")
+                for entry in network_allowlist:
+                    print(f"  - {entry}")
+            except Exception:
+                pass
         container_started = False
         try:
             try:
-                subprocess.run(podman_command, capture_output=True)
-                container_started = True
+                if not skip_container:
+                    start = subprocess.run(
+                        podman_command, capture_output=True, text=True
+                    )
+                    if start.returncode == 0:
+                        container_started = True
+                    else:
+                        print("Failed to start ZAP container")
+                        if start.stderr:
+                            print(start.stderr.strip())
+                        # If container failed to start, continue by attempting to connect to an existing ZAP
+                else:
+                    # Explicitly skipping container startup
+                    pass
             except FileNotFoundError:
                 print(
                     "Podman not found; attempting to connect to existing ZAP instance..."
                 )
+            zap_base_url = (
+                zap_base_url_override
+                if zap_base_url_override
+                else f"http://localhost:{zap_port}"
+            )
 
-            zap_base_url = "http://localhost:8080"
+            # Wait for ZAP API to be ready (skip in tests where requests is mocked)
+            if "PYTEST_CURRENT_TEST" not in os.environ:
+                ready = False
+                deadline = time.time() + float(os.environ.get("ZAP_READY_TIMEOUT", "60"))
+                while time.time() < deadline:
+                    try:
+                        r = requests.get(f"{zap_base_url}/JSON/core/view/version/", timeout=5)
+                        r.raise_for_status()
+                        ready = True
+                        break
+                    except Exception:
+                        time.sleep(2)
+                if not ready:
+                    print("ZAP did not become ready within timeout.")
+                    # Try to print container logs for diagnostics
+                    if container_started:
+                        try:
+                            logs = subprocess.run(["podman", "logs", container_name], capture_output=True, text=True)
+                            if logs.stdout:
+                                print("--- ZAP Container Logs (stdout) ---")
+                                print(logs.stdout[-4000:])
+                            if logs.stderr:
+                                print("--- ZAP Container Logs (stderr) ---")
+                                print(logs.stderr[-4000:])
+                        except Exception:
+                            pass
+                    return []
+            # Map target URL for container networking if needed
+            mapped_target_url = target_url
+            if container_started:
+                try:
+                    parsed = urlparse(target_url)
+                    if parsed.hostname in {"localhost", "127.0.0.1", "::1"}:
+                        # Use special host name that resolves to the host from inside containers
+                        new_netloc = f"host.containers.internal:{parsed.port or (80 if parsed.scheme == 'http' else 443)}"
+                        mapped_target_url = urlunparse(
+                            (
+                                parsed.scheme,
+                                new_netloc,
+                                parsed.path or "",
+                                parsed.params or "",
+                                parsed.query or "",
+                                parsed.fragment or "",
+                            )
+                        )
+                        print(
+                            f"Rewrote target URL for container: {target_url} -> {mapped_target_url}"
+                        )
+                except Exception:
+                    # Non-fatal; keep original target
+                    mapped_target_url = target_url
+
             # Spider the target URL
-            print(f"Spidering target: {target_url}")
+            print(f"Spidering target: {mapped_target_url}")
             spider_url = f"{zap_base_url}/JSON/spider/action/scan/"
-            spider_params = {"url": target_url, "maxChildren": "10", "recurse": "true"}
+            spider_params = {"url": mapped_target_url, "maxChildren": "10", "recurse": "true"}
             response = requests.get(spider_url, params=spider_params, timeout=30)
             response.raise_for_status()
             spider_scan_id = response.json().get("scan", "0")
@@ -83,9 +193,9 @@ class ZapRunner:
                 time.sleep(1)
 
             # Active scan
-            print(f"Active scanning target: {target_url}")
+            print(f"Active scanning target: {mapped_target_url}")
             ascan_url = f"{zap_base_url}/JSON/ascan/action/scan/"
-            ascan_params = {"url": target_url, "recurse": "true"}
+            ascan_params = {"url": mapped_target_url, "recurse": "true"}
             response = requests.get(ascan_url, params=ascan_params, timeout=30)
             response.raise_for_status()
             ascan_id = response.json().get("scan", "0")

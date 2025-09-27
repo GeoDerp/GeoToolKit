@@ -22,7 +22,7 @@ class ReportGenerator:
         self.env = Environment(loader=FileSystemLoader(self.template_dir))
         self.template = self.env.get_template("report.md")
 
-    def generate_report(self):
+    def generate_report(self) -> None:
         """Generates the Markdown report and writes it to the specified output file."""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         total_projects = len(self.projects)
@@ -37,14 +37,15 @@ class ReportGenerator:
         language_stats = self._calculate_language_stats()
 
         # Prepare data for the template
-        template_data = {
+        scans_list: list[dict[str, object]] = []
+        template_data: dict[str, object] = {
             "timestamp": timestamp,
             "total_projects": total_projects,
             "total_findings": total_findings,
             "severity_stats": severity_stats,
             "tool_stats": tool_stats,
             "language_stats": language_stats,
-            "scans": [],
+            "scans": scans_list,
         }
 
         for scan in self.scans:
@@ -52,7 +53,7 @@ class ReportGenerator:
             if not project:
                 continue
 
-            template_data["scans"].append(
+            scans_list.append(
                 {
                     "scan_id": scan.id,
                     "project_name": project.name,
@@ -83,7 +84,7 @@ class ReportGenerator:
 
     def _calculate_severity_stats(self) -> dict[str, int]:
         """Calculate statistics by finding severity."""
-        severity_counter = Counter()
+        severity_counter: Counter[str] = Counter()
         for scan in self.scans:
             for finding in scan.results:
                 severity_counter[finding.severity.lower()] += 1
@@ -91,7 +92,7 @@ class ReportGenerator:
 
     def _calculate_tool_stats(self) -> dict[str, int]:
         """Calculate statistics by scanning tool."""
-        tool_counter = Counter()
+        tool_counter: Counter[str] = Counter()
         for scan in self.scans:
             for finding in scan.results:
                 tool_counter[finding.tool] += 1
@@ -99,7 +100,7 @@ class ReportGenerator:
 
     def _calculate_language_stats(self) -> dict[str, int]:
         """Calculate statistics by programming language."""
-        language_counter = Counter()
+        language_counter: Counter[str] = Counter()
         project_map = {str(p.id): p for p in self.projects}
 
         for scan in self.scans:
