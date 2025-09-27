@@ -185,3 +185,8 @@ def normalizeProjects(inputPath: str = "projects.json", outputPath: str | None =
 if __name__ == "__main__":  # pragma: no cover
     # Start MCP server
     mcp.run()
+
+
+def main() -> None:
+    """Main entry point for MCP server CLI."""
+    mcp.run()
