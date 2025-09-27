@@ -153,8 +153,7 @@ runs:
       run: uv tool install semgrep
       shell: bash
     - name: Run Semgrep scan and output to Github Security
-      working-directory: ${{ inputs.source_dir }}
-      run: semgrep scan --sarif -o ${{ github.workspace }}/semgrep-output.sarif --oss-only
+      run: semgrep scan --sarif -o ${{ github.workspace }}/semgrep-output.sarif --oss-only ${{ inputs.source_dir }}
       shell: bash
     - name: Upload SARIF report to GitHub (even if previous step failed)
       if: always()
@@ -164,11 +163,9 @@ runs:
         category: semgrep
         
     - name: Run Semgrep scan and fail on issues
-      working-directory: ${{ inputs.source_dir }}
-      run: semgrep scan --severity ERROR --severity WARNING --oss-only --json-output=semgrep
+      run: semgrep scan --severity ERROR --severity WARNING --oss-only --json-output=semgrep ${{ inputs.source_dir }}
       shell: bash
     - name: Add semgrep output to action summary
-      working-directory: ${{ inputs.source_dir }}
       run: |
         node .github/actions/python-uv/semgrep.js >> $GITHUB_STEP_SUMMARY
       shell: bash
