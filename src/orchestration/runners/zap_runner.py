@@ -9,6 +9,9 @@ import requests
 from src.models.finding import Finding
 from src.orchestration.parser import OutputParser
 
+# Default timeout for ZAP API to become ready (in seconds)
+DEFAULT_ZAP_READY_TIMEOUT = 60
+
 
 class ZapRunner:
     """
@@ -136,7 +139,7 @@ class ZapRunner:
             if "PYTEST_CURRENT_TEST" not in os.environ:
                 ready = False
                 deadline = time.time() + float(
-                    os.environ.get("ZAP_READY_TIMEOUT", "60")
+                    os.environ.get("ZAP_READY_TIMEOUT", str(DEFAULT_ZAP_READY_TIMEOUT))
                 )
                 while time.time() < deadline:
                     try:

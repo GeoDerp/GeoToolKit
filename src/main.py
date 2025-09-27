@@ -225,4 +225,11 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nOperation cancelled by user")
+        exit(1)
+    except Exception as e:
+        print(f"Error: {e}")
+        exit(1)
