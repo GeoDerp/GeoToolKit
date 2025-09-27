@@ -57,7 +57,9 @@ class Project(BaseModel):
             except Exception:
                 # If it's not a valid URL and not a local path, it might still be a relative path
                 # Log warning for potentially invalid URLs
-                logger.warning(f"URL '{v}' doesn't match expected patterns, allowing for flexibility")
+                logger.warning(
+                    f"URL '{v}' doesn't match expected patterns, allowing for flexibility"
+                )
                 return v
         raise ValueError("URL must be a non-empty string")
 

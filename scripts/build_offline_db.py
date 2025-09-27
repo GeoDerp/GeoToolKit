@@ -53,7 +53,9 @@ def download(url: str, dest: Path, retries: int = 3, backoff: float = 2.0) -> bo
     return False
 
 
-def collect_nvd(out_dir: Path, years: Iterable[int], include_recent_modified: bool, simulate: bool) -> dict:
+def collect_nvd(
+    out_dir: Path, years: Iterable[int], include_recent_modified: bool, simulate: bool
+) -> dict:
     nvd_dir = out_dir / "nvd"
     safe_mkdir(nvd_dir)
     results = {"success": [], "failed": []}
@@ -87,7 +89,9 @@ def collect_osv(out_dir: Path, simulate: bool) -> dict:
 
     if simulate:
         (osv_dir / "osv-offline-placeholder.json").write_text("{}\n")
-        result.update({"method": "simulate", "success": True, "note": "placeholder created"})
+        result.update(
+            {"method": "simulate", "success": True, "note": "placeholder created"}
+        )
         return result
 
     # Prefer osv-scanner offline DB capability if installed
@@ -114,7 +118,9 @@ def collect_osv(out_dir: Path, simulate: bool) -> dict:
         if download(url, dest):
             result.update({"method": "public-export", "success": True})
         else:
-            result.update({"method": "public-export", "success": False, "note": "download failed"})
+            result.update(
+                {"method": "public-export", "success": False, "note": "download failed"}
+            )
     except Exception as e:  # pragma: no cover
         result.update({"method": "public-export", "success": False, "note": str(e)})
 
@@ -162,7 +168,9 @@ def collect_ghsa(out_dir: Path, simulate: bool) -> dict:
                 result.update({"success": False, "note": f"HTTP {he.code}"})
                 break
         (ghsa_dir / "advisories.json").write_text(json.dumps(combined))
-        result.update({"success": True, "note": f"fetched {len(combined)} advisories (sample)"})
+        result.update(
+            {"success": True, "note": f"fetched {len(combined)} advisories (sample)"}
+        )
     except Exception as e:  # pragma: no cover
         result.update({"success": False, "note": str(e)})
 
@@ -180,14 +188,38 @@ def build_bundle(output: Path, workspace: Path, manifest: dict) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build an offline vulnerability database tarball")
-    parser.add_argument("--output", default="data/offline-db.tar.gz", help="Output tar.gz path")
-    parser.add_argument("--years", nargs="*", type=int, default=[], help="NVD years to include (e.g., 2021 2022 2023)")
-    parser.add_argument("--recent-modified", action="store_true", default=True, help="Include NVD recent/modified feeds")
-    parser.add_argument("--no-recent-modified", dest="recent_modified", action="store_false", help="Skip NVD recent/modified feeds")
+    parser = argparse.ArgumentParser(
+        description="Build an offline vulnerability database tarball"
+    )
+    parser.add_argument(
+        "--output", default="data/offline-db.tar.gz", help="Output tar.gz path"
+    )
+    parser.add_argument(
+        "--years",
+        nargs="*",
+        type=int,
+        default=[],
+        help="NVD years to include (e.g., 2021 2022 2023)",
+    )
+    parser.add_argument(
+        "--recent-modified",
+        action="store_true",
+        default=True,
+        help="Include NVD recent/modified feeds",
+    )
+    parser.add_argument(
+        "--no-recent-modified",
+        dest="recent_modified",
+        action="store_false",
+        help="Skip NVD recent/modified feeds",
+    )
     parser.add_argument("--no-osv", action="store_true", help="Skip OSV collection")
     parser.add_argument("--no-ghsa", action="store_true", help="Skip GHSA collection")
-    parser.add_argument("--simulate", action="store_true", help="Create placeholders instead of network downloads")
+    parser.add_argument(
+        "--simulate",
+        action="store_true",
+        help="Create placeholders instead of network downloads",
+    )
     return parser.parse_args()
 
 
@@ -215,7 +247,9 @@ def main() -> int:
     }
     try:
         # NVD
-        manifest["nvd"] = collect_nvd(temp_root, years, args.recent_modified, args.simulate)
+        manifest["nvd"] = collect_nvd(
+            temp_root, years, args.recent_modified, args.simulate
+        )
 
         # OSV
         if not args.no_osv:
@@ -232,7 +266,7 @@ def main() -> int:
         # Write manifest before tar for visibility in workspace as well
         (temp_root / "metadata.json").write_text(json.dumps(manifest, indent=2))
 
-                # Create bundle
+        # Create bundle
         build_bundle(output, temp_root, manifest)
         log(f"Bundle created at: {output}")
         return 0

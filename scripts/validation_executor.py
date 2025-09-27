@@ -30,7 +30,7 @@ class ValidationExecutor:
             "steps_failed": [],
             "static_scan_results": {},
             "dast_scan_results": {},
-            "summary": {}
+            "summary": {},
         }
 
     def log(self, message: str, level: str = "INFO"):
@@ -38,7 +38,9 @@ class ValidationExecutor:
         timestamp = datetime.now().strftime("%H:%M:%S")
         print(f"[{timestamp}] {level}: {message}")
 
-    def run_command(self, cmd: list[str], capture_output: bool = True, timeout: int = 300) -> subprocess.CompletedProcess:
+    def run_command(
+        self, cmd: list[str], capture_output: bool = True, timeout: int = 300
+    ) -> subprocess.CompletedProcess:
         """Run command with timeout and logging"""
         self.log(f"Running: {' '.join(cmd)}")
         try:
@@ -47,12 +49,14 @@ class ValidationExecutor:
                 capture_output=capture_output,
                 text=True,
                 timeout=timeout,
-                check=False
+                check=False,
             )
             return result
         except subprocess.TimeoutExpired:
             self.log(f"Command timed out after {timeout}s: {' '.join(cmd)}", "ERROR")
-            return subprocess.CompletedProcess(cmd, 124, "", f"Timeout after {timeout}s")
+            return subprocess.CompletedProcess(
+                cmd, 124, "", f"Timeout after {timeout}s"
+            )
         except Exception as e:
             self.log(f"Command failed: {e}", "ERROR")
             return subprocess.CompletedProcess(cmd, 1, "", str(e))
@@ -109,17 +113,29 @@ class ValidationExecutor:
             # Run GeoToolKit static analysis
             # Try uv run first, fall back to python -m
             uv_cmd = [
-                "uv", "run", "python", "-m", "src.main",
-                "--input", str(input_file),
-                "--output", str(output_file),
-                "--database-path", "data/offline-db.tar.gz"
+                "uv",
+                "run",
+                "python",
+                "-m",
+                "src.main",
+                "--input",
+                str(input_file),
+                "--output",
+                str(output_file),
+                "--database-path",
+                "data/offline-db.tar.gz",
             ]
 
             python_cmd = [
-                "python", "-m", "src.main",
-                "--input", str(input_file),
-                "--output", str(output_file),
-                "--database-path", "data/offline-db.tar.gz"
+                "python",
+                "-m",
+                "src.main",
+                "--input",
+                str(input_file),
+                "--output",
+                str(output_file),
+                "--database-path",
+                "data/offline-db.tar.gz",
             ]
 
             # Check if uv is available
@@ -132,7 +148,7 @@ class ValidationExecutor:
                     stdout=f,
                     stderr=subprocess.STDOUT,
                     timeout=600,  # 10 minutes
-                    text=True
+                    text=True,
                 )
 
             # Parse results
@@ -148,7 +164,10 @@ class ValidationExecutor:
                 self.results["steps_completed"].append("static_analysis")
                 return True
             else:
-                self.log(f"Static analysis failed with return code {result.returncode}", "ERROR")
+                self.log(
+                    f"Static analysis failed with return code {result.returncode}",
+                    "ERROR",
+                )
                 self.results["static_scan_results"]["status"] = "failed"
                 self.results["static_scan_results"]["return_code"] = result.returncode
                 self.results["steps_failed"].append("static_analysis")
@@ -206,11 +225,16 @@ class ValidationExecutor:
             total_checks = len(validation_checks)
 
             if passed_checks >= total_checks * VALIDATION_PASS_THRESHOLD:
-                self.log(f"✅ Static validation passed ({passed_checks}/{total_checks} checks)")
+                self.log(
+                    f"✅ Static validation passed ({passed_checks}/{total_checks} checks)"
+                )
                 self.results["steps_completed"].append("static_validation")
                 return True
             else:
-                self.log(f"❌ Static validation failed ({passed_checks}/{total_checks} checks)", "ERROR")
+                self.log(
+                    f"❌ Static validation failed ({passed_checks}/{total_checks} checks)",
+                    "ERROR",
+                )
                 self.results["steps_failed"].append("static_validation")
                 return False
 
@@ -227,7 +251,9 @@ class ValidationExecutor:
             # Create container projects if it doesn't exist
             container_file = self.configs_dir / "container-projects.json"
             if not container_file.exists():
-                self.log("Container projects file not found, creating simulation", "WARN")
+                self.log(
+                    "Container projects file not found, creating simulation", "WARN"
+                )
 
                 # Create minimal container projects for simulation
                 simulation_data = {
@@ -242,11 +268,14 @@ class ValidationExecutor:
                                 "ports": ["3000"],
                                 "protocol": "http",
                                 "health_endpoint": "/",
-                                "allowed_egress": {"localhost": ["3000"], "external_hosts": []}
-                            }
+                                "allowed_egress": {
+                                    "localhost": ["3000"],
+                                    "external_hosts": [],
+                                },
+                            },
                         }
                     ],
-                    "metadata": {"purpose": "DAST simulation"}
+                    "metadata": {"purpose": "DAST simulation"},
                 }
 
                 with open(container_file, "w") as f:
@@ -268,7 +297,9 @@ class ValidationExecutor:
 
             # Create simulation report
             with open(output_file, "w") as f:
-                f.write(f"# DAST Security Report - {datetime.now().strftime('%Y-%m-%d')}\n\n")
+                f.write(
+                    f"# DAST Security Report - {datetime.now().strftime('%Y-%m-%d')}\n\n"
+                )
                 f.write("## Executive Summary\n")
                 f.write("DAST scanning completed in simulation mode.\n\n")
                 f.write("## Targets Scanned\n")
@@ -287,7 +318,7 @@ class ValidationExecutor:
                 "output_file": str(output_file),
                 "log_file": str(log_file),
                 "targets_scanned": 1,
-                "network_isolated": True
+                "network_isolated": True,
             }
 
             self.log("✅ DAST simulation completed")
@@ -308,21 +339,29 @@ class ValidationExecutor:
             validation_log = self.validation_dir / "validation-log.md"
 
             # Calculate summary statistics
-            total_steps = len(self.results["steps_completed"]) + len(self.results["steps_failed"])
-            success_rate = len(self.results["steps_completed"]) / total_steps * 100 if total_steps > 0 else 0
+            total_steps = len(self.results["steps_completed"]) + len(
+                self.results["steps_failed"]
+            )
+            success_rate = (
+                len(self.results["steps_completed"]) / total_steps * 100
+                if total_steps > 0
+                else 0
+            )
 
             self.results["summary"] = {
                 "total_steps": total_steps,
                 "completed_steps": len(self.results["steps_completed"]),
                 "failed_steps": len(self.results["steps_failed"]),
                 "success_rate": round(success_rate, 1),
-                "validation_end": datetime.now().strftime("%Y%m%d-%H%M%S")
+                "validation_end": datetime.now().strftime("%Y%m%d-%H%M%S"),
             }
 
             # Generate validation report
             with open(validation_log, "w") as f:
                 f.write("# GeoToolKit Validation Report\n\n")
-                f.write(f"**Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(
+                    f"**Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+                )
                 f.write(f"**Validation ID**: {self.timestamp}\n")
                 f.write(f"**Success Rate**: {success_rate:.1f}%\n\n")
 
@@ -355,8 +394,12 @@ class ValidationExecutor:
                 f.write("## DAST Analysis Results\n")
                 dast_results = self.results.get("dast_scan_results", {})
                 f.write(f"**Status**: {dast_results.get('status', 'unknown')}\n")
-                f.write(f"**Targets Scanned**: {dast_results.get('targets_scanned', 0)}\n")
-                f.write(f"**Network Isolated**: {dast_results.get('network_isolated', False)}\n\n")
+                f.write(
+                    f"**Targets Scanned**: {dast_results.get('targets_scanned', 0)}\n"
+                )
+                f.write(
+                    f"**Network Isolated**: {dast_results.get('network_isolated', False)}\n\n"
+                )
 
                 f.write("## Files Generated\n")
                 for result_type in ["static_scan_results", "dast_scan_results"]:
@@ -393,7 +436,8 @@ class ValidationExecutor:
                 "trivy_executed": "trivy" in log_content.lower(),
                 "osv_executed": "osv" in log_content.lower(),
                 "files_analyzed": log_content.count("analyzed") > 0,
-                "network_isolated": "--network=none" in log_content or "network" in log_content.lower()
+                "network_isolated": "--network=none" in log_content
+                or "network" in log_content.lower(),
             }
 
             self.results["static_scan_results"]["metrics"] = metrics
@@ -411,7 +455,7 @@ class ValidationExecutor:
             ("Static Analysis", self.step_2_run_static_analysis),
             ("Static Validation", self.step_3_validate_static_results),
             ("DAST Simulation", self.step_4_run_dast_simulation),
-            ("Validation Report", self.step_5_generate_validation_report)
+            ("Validation Report", self.step_5_generate_validation_report),
         ]
 
         overall_success = True
@@ -427,14 +471,18 @@ class ValidationExecutor:
             else:
                 self.log(f"✅ {step_name} completed")
 
-        self.log(f"\n{'='*60}")
+        self.log(f"\n{'=' * 60}")
         if overall_success:
             self.log("🎉 Validation completed successfully!")
         else:
             self.log("⚠️ Validation completed with some failures")
 
-        self.log(f"📊 Results: {len(self.results['steps_completed'])} passed, {len(self.results['steps_failed'])} failed")
-        self.log(f"📁 Validation report: {self.results.get('validation_report', 'Not generated')}")
+        self.log(
+            f"📊 Results: {len(self.results['steps_completed'])} passed, {len(self.results['steps_failed'])} failed"
+        )
+        self.log(
+            f"📁 Validation report: {self.results.get('validation_report', 'Not generated')}"
+        )
 
         return overall_success
 

@@ -36,7 +36,9 @@ def run_quick_validation():
 
     # Check UV
     try:
-        result = subprocess.run(["uv", "--version"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(
+            ["uv", "--version"], capture_output=True, text=True, timeout=5
+        )
         env_checks["uv"] = result.returncode == 0
         if env_checks["uv"]:
             print(f"✅ UV: {result.stdout.strip()}")
@@ -48,7 +50,9 @@ def run_quick_validation():
 
     # Check Podman
     try:
-        result = subprocess.run(["podman", "--version"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(
+            ["podman", "--version"], capture_output=True, text=True, timeout=5
+        )
         env_checks["podman"] = result.returncode == 0
         if env_checks["podman"]:
             print(f"✅ Podman: {result.stdout.strip()}")
@@ -83,7 +87,9 @@ def run_quick_validation():
                     if project.get("container_capable"):
                         container_capable += 1
 
-                print(f"✅ {len(languages)} languages covered: {', '.join(sorted(languages))}")
+                print(
+                    f"✅ {len(languages)} languages covered: {', '.join(sorted(languages))}"
+                )
                 print(f"✅ {container_capable} container-capable projects for DAST")
                 config_checks["projects"] = True
         except Exception as e:
@@ -106,7 +112,12 @@ def run_quick_validation():
     print("\n📋 Step 3: Validation Structure")
     print("-" * 30)
 
-    validation_dirs = ["validation", "validation/configs", "validation/logs", "validation/reports"]
+    validation_dirs = [
+        "validation",
+        "validation/configs",
+        "validation/logs",
+        "validation/reports",
+    ]
     structure_ok = True
 
     for dir_path in validation_dirs:
@@ -125,8 +136,14 @@ def run_quick_validation():
     try:
         # Simple import test
         result = subprocess.run(
-            ["python", "-c", "import src.models.project; print('✅ GeoToolKit modules importable')"],
-            capture_output=True, text=True, timeout=10
+            [
+                "python",
+                "-c",
+                "import src.models.project; print('✅ GeoToolKit modules importable')",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         if result.returncode == 0:
             print(result.stdout.strip())
@@ -144,15 +161,17 @@ def run_quick_validation():
 
     total_checks = len(env_checks) + len(config_checks) + 1 + 1  # structure + func
     passed_checks = (
-        sum(env_checks.values()) +
-        sum(config_checks.values()) +
-        (1 if structure_ok else 0) +
-        (1 if func_test else 0)
+        sum(env_checks.values())
+        + sum(config_checks.values())
+        + (1 if structure_ok else 0)
+        + (1 if func_test else 0)
     )
 
     success_rate = (passed_checks / total_checks) * 100
 
-    print(f"📊 Validation Results: {passed_checks}/{total_checks} checks passed ({success_rate:.1f}%)")
+    print(
+        f"📊 Validation Results: {passed_checks}/{total_checks} checks passed ({success_rate:.1f}%)"
+    )
 
     # Create summary report
     summary = {
@@ -164,7 +183,7 @@ def run_quick_validation():
         "configuration_checks": config_checks,
         "structure_ok": structure_ok,
         "functionality_test": func_test,
-        "ready_for_full_validation": success_rate >= 80
+        "ready_for_full_validation": success_rate >= 80,
     }
 
     # Save summary
@@ -181,7 +200,9 @@ def run_quick_validation():
         print("Next steps:")
         print("   1. Run: python scripts/enrich_projects.py")
         print("   2. Run: python scripts/validation_executor.py")
-        print("   3. For DAST: python scripts/start_dast_targets.py validation/configs/container-projects.json")
+        print(
+            "   3. For DAST: python scripts/start_dast_targets.py validation/configs/container-projects.json"
+        )
     else:
         print("\n⚠️  System needs setup before full validation")
         print("Issues to address:")

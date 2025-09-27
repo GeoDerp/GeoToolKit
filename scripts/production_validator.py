@@ -4,7 +4,7 @@ Production Deployment Readiness Validator for GeoToolKit
 
 This script executes a comprehensive production readiness test suite that validates:
 1. Core functionality across all supported programming languages
-2. Load testing and performance validation  
+2. Load testing and performance validation
 3. Security configuration validation
 4. Container isolation and resource limits
 5. Error handling and edge cases
@@ -28,10 +28,10 @@ from pathlib import Path
 
 # Setup logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
 
 class ProductionValidator:
     """Main production validation orchestrator."""
@@ -39,11 +39,13 @@ class ProductionValidator:
     def __init__(self):
         self.project_root = Path(__file__).parent.parent
         self.test_results = {
-            "validation_timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+            "validation_timestamp": time.strftime(
+                "%Y-%m-%d %H:%M:%S UTC", time.gmtime()
+            ),
             "tests": {},
             "summary": {},
             "issues_found": [],
-            "recommendations": []
+            "recommendations": [],
         }
 
     def validate_environment(self):
@@ -53,9 +55,7 @@ class ProductionValidator:
         # Check Python environment
         try:
             result = subprocess.run(
-                [sys.executable, "--version"],
-                capture_output=True,
-                text=True
+                [sys.executable, "--version"], capture_output=True, text=True
             )
             python_version = result.stdout.strip()
             logger.info(f"Python version: {python_version}")
@@ -64,12 +64,7 @@ class ProductionValidator:
             return False
 
         # Check required directories exist
-        required_dirs = [
-            "src",
-            "tests",
-            "seccomp",
-            "scripts"
-        ]
+        required_dirs = ["src", "tests", "seccomp", "scripts"]
 
         for dir_name in required_dirs:
             dir_path = self.project_root / dir_name
@@ -82,7 +77,7 @@ class ProductionValidator:
             "pyproject.toml",
             "projects.json",
             "languages.json",
-            "seccomp/default.json"
+            "seccomp/default.json",
         ]
 
         for file_name in required_files:
@@ -106,7 +101,7 @@ class ProductionValidator:
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
-                timeout=300
+                timeout=300,
             )
 
             duration = time.time() - start_time
@@ -116,7 +111,7 @@ class ProductionValidator:
                 "duration": duration,
                 "return_code": result.returncode,
                 "stdout": result.stdout,
-                "stderr": result.stderr
+                "stderr": result.stderr,
             }
 
             self.test_results["tests"]["unit_tests"] = test_result
@@ -125,18 +120,20 @@ class ProductionValidator:
                 logger.info(f"✅ Unit tests passed in {duration:.2f}s")
             else:
                 logger.error(f"❌ Unit tests failed (exit code: {result.returncode})")
-                self.test_results["issues_found"].append({
-                    "type": "unit_test_failure",
-                    "description": "Unit tests failed",
-                    "details": result.stderr
-                })
+                self.test_results["issues_found"].append(
+                    {
+                        "type": "unit_test_failure",
+                        "description": "Unit tests failed",
+                        "details": result.stderr,
+                    }
+                )
 
         except subprocess.TimeoutExpired:
             logger.error("❌ Unit tests timed out")
             self.test_results["tests"]["unit_tests"] = {
                 "status": "timeout",
                 "duration": 300,
-                "error": "Test execution timed out"
+                "error": "Test execution timed out",
             }
 
         return self.test_results["tests"]["unit_tests"]["status"] == "passed"
@@ -153,7 +150,7 @@ class ProductionValidator:
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
-                timeout=600
+                timeout=600,
             )
 
             duration = time.time() - start_time
@@ -163,7 +160,7 @@ class ProductionValidator:
                 "duration": duration,
                 "return_code": result.returncode,
                 "stdout": result.stdout,
-                "stderr": result.stderr
+                "stderr": result.stderr,
             }
 
             self.test_results["tests"]["integration_tests"] = test_result
@@ -172,18 +169,20 @@ class ProductionValidator:
                 logger.info(f"✅ Integration tests passed in {duration:.2f}s")
             else:
                 logger.error("❌ Integration tests failed")
-                self.test_results["issues_found"].append({
-                    "type": "integration_test_failure",
-                    "description": "Integration tests failed",
-                    "details": result.stderr
-                })
+                self.test_results["issues_found"].append(
+                    {
+                        "type": "integration_test_failure",
+                        "description": "Integration tests failed",
+                        "details": result.stderr,
+                    }
+                )
 
         except subprocess.TimeoutExpired:
             logger.error("❌ Integration tests timed out")
             self.test_results["tests"]["integration_tests"] = {
                 "status": "timeout",
                 "duration": 600,
-                "error": "Test execution timed out"
+                "error": "Test execution timed out",
             }
 
         return self.test_results["tests"]["integration_tests"]["status"] == "passed"
@@ -200,7 +199,7 @@ class ProductionValidator:
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
-                timeout=900  # 15 minutes
+                timeout=900,  # 15 minutes
             )
 
             duration = time.time() - start_time
@@ -210,7 +209,7 @@ class ProductionValidator:
                 "duration": duration,
                 "return_code": result.returncode,
                 "stdout": result.stdout,
-                "stderr": result.stderr
+                "stderr": result.stderr,
             }
 
             self.test_results["tests"]["production_tests"] = test_result
@@ -219,18 +218,20 @@ class ProductionValidator:
                 logger.info(f"✅ Production tests passed in {duration:.2f}s")
             else:
                 logger.error("❌ Production tests failed")
-                self.test_results["issues_found"].append({
-                    "type": "production_test_failure",
-                    "description": "Production readiness tests failed",
-                    "details": result.stderr
-                })
+                self.test_results["issues_found"].append(
+                    {
+                        "type": "production_test_failure",
+                        "description": "Production readiness tests failed",
+                        "details": result.stderr,
+                    }
+                )
 
         except subprocess.TimeoutExpired:
             logger.error("❌ Production tests timed out")
             self.test_results["tests"]["production_tests"] = {
                 "status": "timeout",
                 "duration": 900,
-                "error": "Test execution timed out"
+                "error": "Test execution timed out",
             }
 
         return self.test_results["tests"]["production_tests"]["status"] == "passed"
@@ -247,17 +248,20 @@ class ProductionValidator:
         start_time = time.time()
 
         try:
-            result = subprocess.run([
-                sys.executable,
-                str(load_script),
-                "--full-suite",
-                "--concurrent-scans", str(concurrent_scans),
-                "--output", "load_test_results.json"
-            ],
-            cwd=self.project_root,
-            capture_output=True,
-            text=True,
-            timeout=1200  # 20 minutes
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(load_script),
+                    "--full-suite",
+                    "--concurrent-scans",
+                    str(concurrent_scans),
+                    "--output",
+                    "load_test_results.json",
+                ],
+                cwd=self.project_root,
+                capture_output=True,
+                text=True,
+                timeout=1200,  # 20 minutes
             )
 
             duration = time.time() - start_time
@@ -278,7 +282,7 @@ class ProductionValidator:
                 "return_code": result.returncode,
                 "stdout": result.stdout,
                 "stderr": result.stderr,
-                "load_results": load_results
+                "load_results": load_results,
             }
 
             self.test_results["tests"]["load_tests"] = test_result
@@ -291,18 +295,20 @@ class ProductionValidator:
                     self._analyze_load_test_results(load_results)
             else:
                 logger.error("❌ Load tests failed")
-                self.test_results["issues_found"].append({
-                    "type": "load_test_failure",
-                    "description": "Load testing failed",
-                    "details": result.stderr
-                })
+                self.test_results["issues_found"].append(
+                    {
+                        "type": "load_test_failure",
+                        "description": "Load testing failed",
+                        "details": result.stderr,
+                    }
+                )
 
         except subprocess.TimeoutExpired:
             logger.error("❌ Load tests timed out")
             self.test_results["tests"]["load_tests"] = {
                 "status": "timeout",
                 "duration": 1200,
-                "error": "Load test execution timed out"
+                "error": "Load test execution timed out",
             }
 
         return self.test_results["tests"]["load_tests"]["status"] == "passed"
@@ -320,7 +326,7 @@ class ProductionValidator:
             "osv-scanner-seccomp.json",
             "semgrep-seccomp.json",
             "trivy-seccomp.json",
-            "zap-seccomp.json"
+            "zap-seccomp.json",
         ]
 
         for profile in required_profiles:
@@ -343,15 +349,20 @@ class ProductionValidator:
             dockerfile_content = dockerfile_path.read_text()
 
             # Check for non-root user
-            if "USER ${USER_NAME}" not in dockerfile_content and "USER " not in dockerfile_content:
+            if (
+                "USER ${USER_NAME}" not in dockerfile_content
+                and "USER " not in dockerfile_content
+            ):
                 issues.append("Dockerfile security: Should run as non-root user")
 
             # Check for proper file ownership (either COPY --chown or explicit chown)
-            has_ownership = any([
-                "COPY --chown=" in dockerfile_content,
-                "chown -R" in dockerfile_content,
-                "chown " in dockerfile_content
-            ])
+            has_ownership = any(
+                [
+                    "COPY --chown=" in dockerfile_content,
+                    "chown -R" in dockerfile_content,
+                    "chown " in dockerfile_content,
+                ]
+            )
             if not has_ownership:
                 issues.append("Dockerfile security: Should set proper file ownership")
 
@@ -360,19 +371,9 @@ class ProductionValidator:
                 issues.append("Dockerfile security: Should declare exposed ports")
 
         # Check for hardcoded secrets in config files
-        config_files = [
-            "src/main.py",
-            "projects.json",
-            "pyproject.toml"
-        ]
+        config_files = ["src/main.py", "projects.json", "pyproject.toml"]
 
-        secret_patterns = [
-            "password",
-            "secret",
-            "key",
-            "token",
-            "api_key"
-        ]
+        secret_patterns = ["password", "secret", "key", "token", "api_key"]
 
         for config_file in config_files:
             file_path = self.project_root / config_file
@@ -381,22 +382,25 @@ class ProductionValidator:
                 for pattern in secret_patterns:
                     if f"{pattern}=" in content or f'"{pattern}"' in content:
                         # This is just a warning for review
-                        logger.warning(f"Potential hardcoded secret in {config_file}: {pattern}")
+                        logger.warning(
+                            f"Potential hardcoded secret in {config_file}: {pattern}"
+                        )
 
         security_result = {
             "status": "passed" if not issues else "failed",
             "issues": issues,
-            "checks_performed": len(required_profiles) + 3,  # profiles + dockerfile + secrets
-            "issues_count": len(issues)
+            "checks_performed": len(required_profiles)
+            + 3,  # profiles + dockerfile + secrets
+            "issues_count": len(issues),
         }
 
         self.test_results["tests"]["security_validation"] = security_result
 
         if issues:
             logger.error(f"❌ Security validation failed with {len(issues)} issues")
-            self.test_results["issues_found"].extend([
-                {"type": "security_issue", "description": issue} for issue in issues
-            ])
+            self.test_results["issues_found"].extend(
+                [{"type": "security_issue", "description": issue} for issue in issues]
+            )
         else:
             logger.info("✅ Security validation passed")
 
@@ -407,7 +411,9 @@ class ProductionValidator:
         logger.info("Validating performance requirements...")
 
         # Check if load test results are available
-        load_results = self.test_results["tests"].get("load_tests", {}).get("load_results", {})
+        load_results = (
+            self.test_results["tests"].get("load_tests", {}).get("load_results", {})
+        )
 
         performance_issues = []
 
@@ -417,21 +423,31 @@ class ProductionValidator:
                 if test.get("test_type") == "concurrent_scans":
                     avg_scan_time = test.get("average_scan_time", 0)
                     if avg_scan_time > 10.0:  # 10 seconds per scan is too slow
-                        performance_issues.append(f"Average scan time too slow: {avg_scan_time:.2f}s")
+                        performance_issues.append(
+                            f"Average scan time too slow: {avg_scan_time:.2f}s"
+                        )
 
                     scans_per_second = test.get("scans_per_second", 0)
                     if scans_per_second < 0.1:  # Less than 1 scan per 10 seconds
-                        performance_issues.append(f"Scan throughput too low: {scans_per_second:.2f} scans/sec")
+                        performance_issues.append(
+                            f"Scan throughput too low: {scans_per_second:.2f} scans/sec"
+                        )
 
             # Check memory usage
-            memory_metrics = load_results.get("performance_metrics", {}).get("memory_stress", {})
+            memory_metrics = load_results.get("performance_metrics", {}).get(
+                "memory_stress", {}
+            )
             if memory_metrics:
                 memory_increase = memory_metrics.get("memory_increase_mb", 0)
                 if memory_increase > 500:  # More than 500MB increase
-                    performance_issues.append(f"Memory usage too high: {memory_increase:.1f}MB increase")
+                    performance_issues.append(
+                        f"Memory usage too high: {memory_increase:.1f}MB increase"
+                    )
 
             # Check report generation performance
-            report_metrics = load_results.get("performance_metrics", {}).get("report_generation", {})
+            report_metrics = load_results.get("performance_metrics", {}).get(
+                "report_generation", {}
+            )
             for size, metrics in report_metrics.items():
                 generation_time = metrics.get("generation_time", 0)
                 findings_count = metrics.get("findings", 0)
@@ -439,26 +455,33 @@ class ProductionValidator:
                     time_per_finding = generation_time / findings_count
                     if time_per_finding > 0.01:  # More than 10ms per finding
                         performance_issues.append(
-                            f"Report generation too slow for {size}: {time_per_finding*1000:.1f}ms per finding"
+                            f"Report generation too slow for {size}: {time_per_finding * 1000:.1f}ms per finding"
                         )
 
         else:
-            performance_issues.append("No load test results available for performance validation")
+            performance_issues.append(
+                "No load test results available for performance validation"
+            )
 
         performance_result = {
             "status": "passed" if not performance_issues else "failed",
             "issues": performance_issues,
             "load_test_available": bool(load_results),
-            "issues_count": len(performance_issues)
+            "issues_count": len(performance_issues),
         }
 
         self.test_results["tests"]["performance_validation"] = performance_result
 
         if performance_issues:
-            logger.error(f"❌ Performance validation failed with {len(performance_issues)} issues")
-            self.test_results["issues_found"].extend([
-                {"type": "performance_issue", "description": issue} for issue in performance_issues
-            ])
+            logger.error(
+                f"❌ Performance validation failed with {len(performance_issues)} issues"
+            )
+            self.test_results["issues_found"].extend(
+                [
+                    {"type": "performance_issue", "description": issue}
+                    for issue in performance_issues
+                ]
+            )
         else:
             logger.info("✅ Performance validation passed")
 
@@ -470,13 +493,20 @@ class ProductionValidator:
 
         # Run ruff for linting
         try:
-            result = subprocess.run([
-                "uv", "run", "ruff", "check", "src/", "tests/", "--output-format=json"
-            ],
-            cwd=self.project_root,
-            capture_output=True,
-            text=True,
-            timeout=120
+            result = subprocess.run(
+                [
+                    "uv",
+                    "run",
+                    "ruff",
+                    "check",
+                    "src/",
+                    "tests/",
+                    "--output-format=json",
+                ],
+                cwd=self.project_root,
+                capture_output=True,
+                text=True,
+                timeout=120,
             )
 
             lint_issues = []
@@ -488,17 +518,20 @@ class ProductionValidator:
                     pass
 
             # Run mypy for type checking
-            mypy_result = subprocess.run([
-                "uv", "run", "mypy", "src/", "--ignore-missing-imports"
-            ],
-            cwd=self.project_root,
-            capture_output=True,
-            text=True,
-            timeout=120
+            mypy_result = subprocess.run(
+                ["uv", "run", "mypy", "src/", "--ignore-missing-imports"],
+                cwd=self.project_root,
+                capture_output=True,
+                text=True,
+                timeout=120,
             )
 
             # Determine advisory vs pass: code quality should not block deployment
-            has_issues = (result.returncode != 0) or (mypy_result.returncode != 0) or (len(lint_issues) > 0)
+            has_issues = (
+                (result.returncode != 0)
+                or (mypy_result.returncode != 0)
+                or (len(lint_issues) > 0)
+            )
             code_quality_result = {
                 # Mark as advisory when issues exist instead of failed (non-blocking)
                 "status": "passed" if not has_issues else "advisory",
@@ -506,7 +539,7 @@ class ProductionValidator:
                 "ruff_issues": len(lint_issues),
                 "ruff_return_code": result.returncode,
                 "mypy_return_code": mypy_result.returncode,
-                "mypy_output": mypy_result.stdout + mypy_result.stderr
+                "mypy_output": mypy_result.stdout + mypy_result.stderr,
             }
 
             self.test_results["tests"]["code_quality"] = code_quality_result
@@ -516,16 +549,20 @@ class ProductionValidator:
             if not code_quality_result.get("advisory"):
                 logger.info("✅ Code quality validation passed")
             else:
-                logger.warning(f"⚠️ Code quality issues found: {total_issues} lint issues")
+                logger.warning(
+                    f"⚠️ Code quality issues found: {total_issues} lint issues"
+                )
                 if mypy_result.returncode != 0:
                     logger.warning("⚠️ Type checking issues found")
-                    logger.warning(f"Type checking issues: {(mypy_result.stdout + mypy_result.stderr)[:200]}")
+                    logger.warning(
+                        f"Type checking issues: {(mypy_result.stdout + mypy_result.stderr)[:200]}"
+                    )
 
         except (subprocess.TimeoutExpired, FileNotFoundError) as e:
             logger.warning(f"Code quality validation skipped: {e}")
             self.test_results["tests"]["code_quality"] = {
                 "status": "skipped",
-                "error": str(e)
+                "error": str(e),
             }
 
         return True  # Don't fail overall validation for code quality issues
@@ -536,21 +573,37 @@ class ProductionValidator:
         insights = []
 
         # Analyze concurrent scan performance
-        concurrent_tests = [t for t in load_results.get("load_tests", []) if t.get("test_type") == "concurrent_scans"]
+        concurrent_tests = [
+            t
+            for t in load_results.get("load_tests", [])
+            if t.get("test_type") == "concurrent_scans"
+        ]
 
         if concurrent_tests:
-            best_test = min(concurrent_tests, key=lambda x: x.get("average_scan_time", float("inf")))
-            worst_test = max(concurrent_tests, key=lambda x: x.get("average_scan_time", 0))
+            best_test = min(
+                concurrent_tests, key=lambda x: x.get("average_scan_time", float("inf"))
+            )
+            worst_test = max(
+                concurrent_tests, key=lambda x: x.get("average_scan_time", 0)
+            )
 
-            insights.append(f"Best concurrent performance: {best_test.get('average_scan_time', 0):.2f}s avg scan time")
-            insights.append(f"Worst concurrent performance: {worst_test.get('average_scan_time', 0):.2f}s avg scan time")
+            insights.append(
+                f"Best concurrent performance: {best_test.get('average_scan_time', 0):.2f}s avg scan time"
+            )
+            insights.append(
+                f"Worst concurrent performance: {worst_test.get('average_scan_time', 0):.2f}s avg scan time"
+            )
 
         # Memory analysis
-        memory_metrics = load_results.get("performance_metrics", {}).get("memory_stress", {})
+        memory_metrics = load_results.get("performance_metrics", {}).get(
+            "memory_stress", {}
+        )
         if memory_metrics:
             memory_efficiency = memory_metrics.get("memory_recovered", 0)
             if memory_efficiency > 0:
-                insights.append(f"Good memory management: {memory_efficiency:.1f}MB recovered")
+                insights.append(
+                    f"Good memory management: {memory_efficiency:.1f}MB recovered"
+                )
             else:
                 insights.append("Memory leak detected: poor cleanup")
 
@@ -570,52 +623,70 @@ class ProductionValidator:
 
             for issue_type, count in issue_types.items():
                 if issue_type == "unit_test_failure":
-                    recommendations.append({
-                        "priority": "high",
-                        "category": "testing",
-                        "description": f"Fix {count} unit test failures before deployment"
-                    })
+                    recommendations.append(
+                        {
+                            "priority": "high",
+                            "category": "testing",
+                            "description": f"Fix {count} unit test failures before deployment",
+                        }
+                    )
                 elif issue_type == "security_issue":
-                    recommendations.append({
-                        "priority": "critical",
-                        "category": "security",
-                        "description": f"Address {count} security configuration issues"
-                    })
+                    recommendations.append(
+                        {
+                            "priority": "critical",
+                            "category": "security",
+                            "description": f"Address {count} security configuration issues",
+                        }
+                    )
                 elif issue_type == "performance_issue":
-                    recommendations.append({
-                        "priority": "medium",
-                        "category": "performance",
-                        "description": f"Optimize performance to address {count} issues"
-                    })
+                    recommendations.append(
+                        {
+                            "priority": "medium",
+                            "category": "performance",
+                            "description": f"Optimize performance to address {count} issues",
+                        }
+                    )
 
         # General recommendations
-        if not self.test_results["tests"].get("load_tests", {}).get("status") == "passed":
-            recommendations.append({
-                "priority": "high",
-                "category": "testing",
-                "description": "Run comprehensive load testing before production deployment"
-            })
+        if (
+            not self.test_results["tests"].get("load_tests", {}).get("status")
+            == "passed"
+        ):
+            recommendations.append(
+                {
+                    "priority": "high",
+                    "category": "testing",
+                    "description": "Run comprehensive load testing before production deployment",
+                }
+            )
 
         # Deployment readiness (exclude advisory/non-blocking checks like code_quality)
         critical_tests = {
-            name: test for name, test in self.test_results["tests"].items()
+            name: test
+            for name, test in self.test_results["tests"].items()
             if not test.get("advisory", False)
         }
-        passed_tests = sum(1 for test in critical_tests.values() if test.get("status") == "passed")
+        passed_tests = sum(
+            1 for test in critical_tests.values() if test.get("status") == "passed"
+        )
         total_tests = len(critical_tests)
 
         if passed_tests == total_tests:
-            recommendations.append({
-                "priority": "info",
-                "category": "deployment",
-                "description": "All tests passed - system ready for production deployment"
-            })
+            recommendations.append(
+                {
+                    "priority": "info",
+                    "category": "deployment",
+                    "description": "All tests passed - system ready for production deployment",
+                }
+            )
         else:
-            recommendations.append({
-                "priority": "critical",
-                "category": "deployment",
-                "description": f"Only {passed_tests}/{total_tests} test suites passed - not ready for production"
-            })
+            recommendations.append(
+                {
+                    "priority": "critical",
+                    "category": "deployment",
+                    "description": f"Only {passed_tests}/{total_tests} test suites passed - not ready for production",
+                }
+            )
 
         self.test_results["recommendations"] = recommendations
 
@@ -624,18 +695,31 @@ class ProductionValidator:
 
         # Only consider non-advisory (critical) tests when computing readiness
         critical_tests = {
-            name: test for name, test in self.test_results["tests"].items()
+            name: test
+            for name, test in self.test_results["tests"].items()
             if not test.get("advisory", False)
         }
         total_tests = len(critical_tests)
-        passed_tests = sum(1 for test in critical_tests.values() if test.get("status") == "passed")
-        failed_tests = sum(1 for test in critical_tests.values() if test.get("status") == "failed")
-        timeout_tests = sum(1 for test in critical_tests.values() if test.get("status") == "timeout")
+        passed_tests = sum(
+            1 for test in critical_tests.values() if test.get("status") == "passed"
+        )
+        failed_tests = sum(
+            1 for test in critical_tests.values() if test.get("status") == "failed"
+        )
+        timeout_tests = sum(
+            1 for test in critical_tests.values() if test.get("status") == "timeout"
+        )
 
-        total_duration = sum(test.get("duration", 0) for test in self.test_results["tests"].values())
+        total_duration = sum(
+            test.get("duration", 0) for test in self.test_results["tests"].values()
+        )
 
         issues_count = len(self.test_results["issues_found"])
-        critical_issues = sum(1 for rec in self.test_results.get("recommendations", []) if rec.get("priority") == "critical")
+        critical_issues = sum(
+            1
+            for rec in self.test_results.get("recommendations", [])
+            if rec.get("priority") == "critical"
+        )
 
         deployment_ready = passed_tests == total_tests and critical_issues == 0
 
@@ -648,7 +732,9 @@ class ProductionValidator:
             "issues_found": issues_count,
             "critical_issues": critical_issues,
             "deployment_ready": deployment_ready,
-            "readiness_score": (passed_tests / total_tests * 100) if total_tests > 0 else 0
+            "readiness_score": (passed_tests / total_tests * 100)
+            if total_tests > 0
+            else 0,
         }
 
         self.test_results["summary"] = summary
@@ -703,16 +789,16 @@ class ProductionValidator:
         summary = self.test_results["summary"]
         logger.info(f"""
 === PRODUCTION VALIDATION SUMMARY ===
-Total Test Suites: {summary['total_test_suites']}
-✅ Passed: {summary['passed']}
-❌ Failed: {summary['failed']}
-⏱️ Timeout: {summary['timeout']}
-🐛 Issues Found: {summary['issues_found']}
-🚨 Critical Issues: {summary['critical_issues']}
-📈 Readiness Score: {summary['readiness_score']:.1f}%
-⏱️ Total Duration: {summary['total_duration_seconds']:.1f}s
+Total Test Suites: {summary["total_test_suites"]}
+✅ Passed: {summary["passed"]}
+❌ Failed: {summary["failed"]}
+⏱️ Timeout: {summary["timeout"]}
+🐛 Issues Found: {summary["issues_found"]}
+🚨 Critical Issues: {summary["critical_issues"]}
+📈 Readiness Score: {summary["readiness_score"]:.1f}%
+⏱️ Total Duration: {summary["total_duration_seconds"]:.1f}s
 
-🚀 DEPLOYMENT READY: {'YES' if summary['deployment_ready'] else 'NO'}
+🚀 DEPLOYMENT READY: {"YES" if summary["deployment_ready"] else "NO"}
 """)
 
         return summary["deployment_ready"]
@@ -720,32 +806,32 @@ Total Test Suites: {summary['total_test_suites']}
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(description="GeoToolKit Production Deployment Validator")
+    parser = argparse.ArgumentParser(
+        description="GeoToolKit Production Deployment Validator"
+    )
     parser.add_argument(
         "--full-test",
         action="store_true",
-        help="Run complete validation suite (default)"
+        help="Run complete validation suite (default)",
     )
     parser.add_argument(
         "--quick-test",
         action="store_true",
-        help="Run quick validation (skip load tests and some checks)"
+        help="Run quick validation (skip load tests and some checks)",
     )
     parser.add_argument(
-        "--load-test",
-        action="store_true",
-        help="Run only load testing"
+        "--load-test", action="store_true", help="Run only load testing"
     )
     parser.add_argument(
         "--concurrent-scans",
         type=int,
         default=10,
-        help="Number of concurrent scans for load testing (default: 10)"
+        help="Number of concurrent scans for load testing (default: 10)",
     )
     parser.add_argument(
         "--output",
         default="production_validation_results.json",
-        help="Output file for validation results"
+        help="Output file for validation results",
     )
 
     args = parser.parse_args()
@@ -766,8 +852,7 @@ def main():
         else:
             # Run full validation
             success = validator.run_full_validation(
-                quick_mode=False,
-                load_test_concurrency=args.concurrent_scans
+                quick_mode=False, load_test_concurrency=args.concurrent_scans
             )
 
         # Save results

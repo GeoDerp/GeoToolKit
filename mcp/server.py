@@ -34,7 +34,9 @@ def _write_json(path: Path, data: dict[str, Any]) -> None:
 
 def _run_cmd(cmd: list[str], cwd: Path | None = None) -> tuple[int, str]:
     try:
-        res = subprocess.run(cmd, cwd=str(cwd) if cwd else None, capture_output=True, text=True)
+        res = subprocess.run(
+            cmd, cwd=str(cwd) if cwd else None, capture_output=True, text=True
+        )
         out = (res.stdout or "") + ("\n" + res.stderr if res.stderr else "")
         return res.returncode, out
     except FileNotFoundError as e:
@@ -78,7 +80,9 @@ def _derive_allowlists(p: dict[str, Any]) -> tuple[list[str], list[str], list[st
 
 
 @tool()
-def createProjects(projects: list[dict[str, Any]], outputPath: str = "projects.json") -> dict:
+def createProjects(
+    projects: list[dict[str, Any]], outputPath: str = "projects.json"
+) -> dict:
     """
     Create a projects.json file with allowlist fields in each project.
     Each project may include:
@@ -114,7 +118,11 @@ def createProjects(projects: list[dict[str, Any]], outputPath: str = "projects.j
 
 
 @tool()
-def runScan(inputPath: str = "projects.json", outputPath: str = "security-report.md", databasePath: str = "data/offline-db.tar.gz") -> dict:
+def runScan(
+    inputPath: str = "projects.json",
+    outputPath: str = "security-report.md",
+    databasePath: str = "data/offline-db.tar.gz",
+) -> dict:
     """
     Run GeoToolKit scan with given input and return the report content.
     Prefers 'uv run', falls back to 'python -m src.main'.
@@ -127,21 +135,47 @@ def runScan(inputPath: str = "projects.json", outputPath: str = "security-report
     output_abs.parent.mkdir(parents=True, exist_ok=True)
 
     # Try uv run first
-    cmd_uv = ["uv", "run", "python", "-m", "src.main", "--input", str(input_abs), "--output", str(output_abs), "--database-path", str(db_abs)]
+    cmd_uv = [
+        "uv",
+        "run",
+        "python",
+        "-m",
+        "src.main",
+        "--input",
+        str(input_abs),
+        "--output",
+        str(output_abs),
+        "--database-path",
+        str(db_abs),
+    ]
     rc, out = _run_cmd(cmd_uv, cwd=APP_ROOT)
     if rc == 0:
-        report_text = output_abs.read_text(encoding="utf-8") if output_abs.exists() else ""
+        report_text = (
+            output_abs.read_text(encoding="utf-8") if output_abs.exists() else ""
+        )
         return {"exitCode": rc, "report": report_text, "log": out}
 
     # Fallback to python
-    cmd_py = ["python", "-m", "src.main", "--input", str(input_abs), "--output", str(output_abs), "--database-path", str(db_abs)]
+    cmd_py = [
+        "python",
+        "-m",
+        "src.main",
+        "--input",
+        str(input_abs),
+        "--output",
+        str(output_abs),
+        "--database-path",
+        str(db_abs),
+    ]
     rc, out = _run_cmd(cmd_py, cwd=APP_ROOT)
     report_text = output_abs.read_text(encoding="utf-8") if output_abs.exists() else ""
     return {"exitCode": rc, "report": report_text, "log": out}
 
 
 @tool()
-def normalizeProjects(inputPath: str = "projects.json", outputPath: str | None = None) -> dict:
+def normalizeProjects(
+    inputPath: str = "projects.json", outputPath: str | None = None
+) -> dict:
     """
     Read an existing projects.json, derive network_allow_hosts/network_allow_ip_ranges/ports from
     network_config, and write back. If outputPath is omitted, overwrites input.
@@ -166,12 +200,14 @@ def normalizeProjects(inputPath: str = "projects.json", outputPath: str | None =
             item.setdefault("network_allow_ip_ranges", cidrs)
             if not item.get("ports") and ports:
                 item["ports"] = ports
-            preview.append({
-                "name": item.get("name") or item.get("url"),
-                "hosts": hosts[:5],
-                "cidrs": cidrs[:5],
-                "ports": ports[:5],
-            })
+            preview.append(
+                {
+                    "name": item.get("name") or item.get("url"),
+                    "hosts": hosts[:5],
+                    "cidrs": cidrs[:5],
+                    "ports": ports[:5],
+                }
+            )
         normalized.append(item)
 
     payload["projects"] = normalized

@@ -13,17 +13,33 @@ from pathlib import Path
 def mock_main():
     """Mock version of main() that tests CLI args and basic workflow without dependencies."""
     parser = argparse.ArgumentParser(description="Automated Malicious Code Scanner")
-    parser.add_argument("--input", required=True, help="Path to the projects.json file.")
-    parser.add_argument("--output", required=True, help="Path for the generated report (e.g., report.md).")
-    parser.add_argument("--database-path", required=True, help="Path to the offline vulnerability database.")
-    parser.add_argument("--network-allowlist", help="Path to the network-allowlist.txt file.")
+    parser.add_argument(
+        "--input", required=True, help="Path to the projects.json file."
+    )
+    parser.add_argument(
+        "--output",
+        required=True,
+        help="Path for the generated report (e.g., report.md).",
+    )
+    parser.add_argument(
+        "--database-path",
+        required=True,
+        help="Path to the offline vulnerability database.",
+    )
+    parser.add_argument(
+        "--network-allowlist", help="Path to the network-allowlist.txt file."
+    )
 
     # Test with sample arguments
     test_args = [
-        "--input", "test-projects.json",
-        "--output", "/tmp/test-report.md",
-        "--database-path", "data/offline-db.tar.gz",
-        "--network-allowlist", "network-allowlist.txt"
+        "--input",
+        "test-projects.json",
+        "--output",
+        "/tmp/test-report.md",
+        "--database-path",
+        "data/offline-db.tar.gz",
+        "--network-allowlist",
+        "network-allowlist.txt",
     ]
 
     args = parser.parse_args(test_args)
@@ -42,7 +58,9 @@ def mock_main():
         print(f"✅ Projects configuration loaded: {len(projects)} projects")
 
         for project in projects:
-            print(f"   - {project.get('name', 'unnamed')}: {project.get('language', 'unknown')} ({project.get('url', 'no-url')})")
+            print(
+                f"   - {project.get('name', 'unnamed')}: {project.get('language', 'unknown')} ({project.get('url', 'no-url')})"
+            )
 
     except Exception as e:
         print(f"❌ Failed to load projects: {e}")
@@ -59,7 +77,11 @@ def mock_main():
     if args.network_allowlist:
         try:
             with open(args.network_allowlist) as f:
-                allowlist = [line.strip() for line in f if line.strip() and not line.strip().startswith("#")]
+                allowlist = [
+                    line.strip()
+                    for line in f
+                    if line.strip() and not line.strip().startswith("#")
+                ]
             print(f"✅ Network allowlist loaded: {len(allowlist)} entries")
             for entry in allowlist[:3]:  # Show first 3
                 print(f"   - {entry}")

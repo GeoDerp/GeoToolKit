@@ -22,7 +22,7 @@ def test_basic_structure():
         "src/models/project.py",
         "src/orchestration/workflow.py",
         "seccomp/default.json",
-        "projects.json"
+        "projects.json",
     ]
 
     required_dirs = [
@@ -32,7 +32,7 @@ def test_basic_structure():
         "src/reporting",
         "tests/unit",
         "tests/integration",
-        "seccomp"
+        "seccomp",
     ]
 
     issues = []
@@ -62,7 +62,7 @@ def test_configuration_files():
     config_files = [
         "projects.json",
         "test-projects.json",
-        "validation/configs/enhanced-projects.json"
+        "validation/configs/enhanced-projects.json",
     ]
 
     issues = []
@@ -83,7 +83,9 @@ def test_configuration_files():
                         required_fields = ["url", "name", "language"]
                         for field in required_fields:
                             if field not in project:
-                                issues.append(f"{config_file}: Project {i} missing {field}")
+                                issues.append(
+                                    f"{config_file}: Project {i} missing {field}"
+                                )
                 else:
                     issues.append(f"{config_file}: Missing 'projects' key")
 
@@ -109,7 +111,7 @@ def test_security_profiles():
         "seccomp/semgrep-seccomp.json",
         "seccomp/trivy-seccomp.json",
         "seccomp/osv-scanner-seccomp.json",
-        "seccomp/zap-seccomp.json"
+        "seccomp/zap-seccomp.json",
     ]
 
     issues = []
@@ -143,7 +145,9 @@ def test_container_tooling():
 
     # Test Podman
     try:
-        result = subprocess.run(["podman", "--version"], capture_output=True, text=True, timeout=10)
+        result = subprocess.run(
+            ["podman", "--version"], capture_output=True, text=True, timeout=10
+        )
         if result.returncode == 0:
             print(f"✅ Podman: {result.stdout.strip()}")
         else:
@@ -158,7 +162,9 @@ def test_container_tooling():
 
     # Test Docker as fallback
     try:
-        result = subprocess.run(["docker", "--version"], capture_output=True, text=True, timeout=10)
+        result = subprocess.run(
+            ["docker", "--version"], capture_output=True, text=True, timeout=10
+        )
         if result.returncode == 0:
             print(f"✅ Docker: {result.stdout.strip()}")
         else:
@@ -183,7 +189,7 @@ def test_documented_features():
         "src/orchestration/runners/semgrep_runner.py",
         "src/orchestration/runners/trivy_runner.py",
         "src/orchestration/runners/osv_runner.py",
-        "src/orchestration/runners/zap_runner.py"
+        "src/orchestration/runners/zap_runner.py",
     ]
 
     for runner in runners:
@@ -242,7 +248,9 @@ def main():
         for i, issue in enumerate(all_issues, 1):
             print(f"   {i}. {issue}")
 
-        print(f"\n❌ GeoToolKit needs {len(all_issues)} fixes to fully meet specification")
+        print(
+            f"\n❌ GeoToolKit needs {len(all_issues)} fixes to fully meet specification"
+        )
         return len(all_issues)
 
 

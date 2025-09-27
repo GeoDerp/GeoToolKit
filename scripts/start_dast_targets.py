@@ -30,14 +30,13 @@ class DastTargetManager:
             print(f"❌ Invalid JSON in {container_projects_file}: {e}")
             sys.exit(1)
 
-    def run_command(self, cmd: list[str], capture_output: bool = True) -> subprocess.CompletedProcess:
+    def run_command(
+        self, cmd: list[str], capture_output: bool = True
+    ) -> subprocess.CompletedProcess:
         """Run a shell command and return the result"""
         try:
             result = subprocess.run(
-                cmd,
-                capture_output=capture_output,
-                text=True,
-                check=False
+                cmd, capture_output=capture_output, text=True, check=False
             )
             return result
         except Exception as e:
@@ -56,11 +55,9 @@ class DastTargetManager:
             return True
 
         # Create new network
-        result = self.run_command([
-            "podman", "network", "create",
-            "--driver", "bridge",
-            self.network_name
-        ])
+        result = self.run_command(
+            ["podman", "network", "create", "--driver", "bridge", self.network_name]
+        )
 
         if result.returncode == 0:
             print(f"✅ Network {self.network_name} created successfully")
@@ -95,29 +92,32 @@ class DastTargetManager:
             "juice-shop": "bkimminich/juice-shop:latest",
             "httpbin": "kennethreitz/httpbin:latest",
             "gin": "golang:1.21-alpine",  # Would build custom image
-            "spring-boot": "openjdk:17-jdk-alpine"  # Would build custom image
+            "spring-boot": "openjdk:17-jdk-alpine",  # Would build custom image
         }
 
         if project_name in known_images:
             # Pull existing image
-            result = self.run_command([
-                "podman", "pull", known_images[project_name]
-            ])
+            result = self.run_command(["podman", "pull", known_images[project_name]])
 
             if result.returncode == 0:
                 # Tag with our naming convention
-                self.run_command([
-                    "podman", "tag",
-                    known_images[project_name],
-                    f"{project_name}:test"
-                ])
+                self.run_command(
+                    [
+                        "podman",
+                        "tag",
+                        known_images[project_name],
+                        f"{project_name}:test",
+                    ]
+                )
                 print(f"✅ Container ready: {project_name}:test")
                 return True
             else:
                 print(f"❌ Failed to pull image for {project_name}: {result.stderr}")
                 return False
         else:
-            print(f"⚠️  No pre-built image for {project_name}, would need to clone and build")
+            print(
+                f"⚠️  No pre-built image for {project_name}, would need to clone and build"
+            )
             print(f"   Repository: {project_url}")
             return False
 
@@ -137,15 +137,20 @@ class DastTargetManager:
         for port in ports:
             port_args.extend(["-p", f"127.0.0.1:{port}:{port}"])
 
-        cmd = [
-            "podman", "run",
-            "-d",  # detached
-            "--rm",  # remove on exit
-            "--name", container_name,
-            "--network", self.network_name
-        ] + port_args + [
-            f"{project_name}:test"
-        ]
+        cmd = (
+            [
+                "podman",
+                "run",
+                "-d",  # detached
+                "--rm",  # remove on exit
+                "--name",
+                container_name,
+                "--network",
+                self.network_name,
+            ]
+            + port_args
+            + [f"{project_name}:test"]
+        )
 
         result = self.run_command(cmd)
 
@@ -281,8 +286,12 @@ def main():
 
             print("\n🔍 Ready for DAST scanning!")
             print("To run DAST scan:")
-            print("   python src/main.py --input validation/configs/container-projects.json \\")
-            print("                      --output validation/reports/security-report.md \\")
+            print(
+                "   python src/main.py --input validation/configs/container-projects.json \\"
+            )
+            print(
+                "                      --output validation/reports/security-report.md \\"
+            )
             print("                      --database-path data/offline-db.tar.gz")
 
             input("\nPress Enter to stop all targets and cleanup...")

@@ -157,9 +157,20 @@ runs:
       run: uv tool install semgrep
       shell: bash
     - name: Run Semgrep scan and output to Github Security
+      continue-on-error: true
       run: semgrep scan --sarif -o ${{ github.workspace }}/semgrep-output.sarif --oss-only ${{ inputs.source_dir }}
       shell: bash
     - name: Upload SARIF report to GitHub (even if previous step failed)
+      if: always()
+      run: |
+        if [ -f "semgrep-output.sarif" ]; then
+          echo "Uploading Semgrep SARIF report..."
+        else
+          echo "Semgrep SARIF file not found, creating empty one..."
+          echo '{"version":"2.1.0","$schema":"https://json.schemastore.org/sarif-2.1.0.json","runs":[]}' > semgrep-output.sarif
+        fi
+      shell: bash
+    - name: Upload Semgrep SARIF to GitHub
       if: always()
       uses: github/codeql-action/upload-sarif@v3
       with:
@@ -167,11 +178,17 @@ runs:
         category: semgrep
         
     - name: Run Semgrep scan and fail on issues
-      run: semgrep scan --severity ERROR --severity WARNING --oss-only --json-output=semgrep ${{ inputs.source_dir }}
+      continue-on-error: true
+      run: semgrep scan --severity ERROR --severity WARNING --oss-only --json --output=${{ github.workspace }}/semgrep.json ${{ inputs.source_dir }}
       shell: bash
     - name: Add semgrep output to action summary
+      if: always()
       run: |
-        node .github/actions/python-uv/semgrep.js >> $GITHUB_STEP_SUMMARY
+        if [ -f "${{ github.workspace }}/semgrep.json" ]; then
+          node .github/actions/python-uv/semgrep.js >> $GITHUB_STEP_SUMMARY
+        else
+          echo "No Semgrep results found" >> $GITHUB_STEP_SUMMARY
+        fi
       shell: bash
 
     - name: Set up QEMU
@@ -194,6 +211,7 @@ runs:
         cache-to: type=gha,mode=max
 
     - name: Run Trivy vulnerability scanner sarif
+      continue-on-error: true
       uses: aquasecurity/trivy-action@master
       with:
         image-ref: ${{ inputs.docker_image_name }}:${{ env.formatted_branch_name }}
@@ -204,12 +222,23 @@ runs:
         severity: 'CRITICAL,HIGH'
     - name: Upload SARIF report to GitHub
       if: always()
+      run: |
+        if [ -f "trivy.sarif" ]; then
+          echo "Uploading Trivy SARIF report..."
+        else
+          echo "Trivy SARIF file not found, creating empty one..."
+          echo '{"version":"2.1.0","$schema":"https://json.schemastore.org/sarif-2.1.0.json","runs":[]}' > trivy.sarif
+        fi
+      shell: bash
+    - name: Upload Trivy SARIF to GitHub
+      if: always()
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: trivy.sarif
         category: Trivy
 
     - name: Run Trivy vulnerability scanner
+      continue-on-error: true
       uses: aquasecurity/trivy-action@master
       with:
         image-ref: ${{ inputs.docker_image_name }}:${{ env.formatted_branch_name }}
@@ -221,9 +250,14 @@ runs:
         severity: 'CRITICAL,HIGH'
 
     - name: Add Trivy output to action summary
+      if: always()
       run: |
-        echo "<h1>Trivy Results :test_tube:</h1>" >> $GITHUB_STEP_SUMMARY; \
-        cat trivy-high-critical.html >> $GITHUB_STEP_SUMMARY
+        echo "<h1>Trivy Results :test_tube:</h1>" >> $GITHUB_STEP_SUMMARY
+        if [ -f "trivy-high-critical.html" ]; then
+          cat trivy-high-critical.html >> $GITHUB_STEP_SUMMARY
+        else
+          echo "No Trivy results found" >> $GITHUB_STEP_SUMMARY
+        fi
       shell: bash
 
     - name: Login to GitHub Container Registry

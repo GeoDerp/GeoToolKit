@@ -31,19 +31,39 @@ def demonstrate_geotoolkit_features():
         languages[lang].append(project["name"])
 
     for lang, names in sorted(languages.items()):
-        print(f"✅ {lang}: {len(names)} projects ({', '.join(names[:2])}{'...' if len(names) > 2 else ''})")
+        print(
+            f"✅ {lang}: {len(names)} projects ({', '.join(names[:2])}{'...' if len(names) > 2 else ''})"
+        )
 
-    print(f"\n🎯 Total: {len(languages)} languages supported across {len(projects)} projects")
+    print(
+        f"\n🎯 Total: {len(languages)} languages supported across {len(projects)} projects"
+    )
 
     # 2. Security Scanning Tools
     print("\n🔒 2. Security Scanning Tools (SAST + SCA + DAST)")
     print("-" * 30)
 
     runners = [
-        ("Semgrep", "src/orchestration/runners/semgrep_runner.py", "Static Application Security Testing (SAST)"),
-        ("Trivy", "src/orchestration/runners/trivy_runner.py", "Software Composition Analysis (SCA)"),
-        ("OSV-Scanner", "src/orchestration/runners/osv_runner.py", "Open Source Vulnerability Database"),
-        ("OWASP ZAP", "src/orchestration/runners/zap_runner.py", "Dynamic Application Security Testing (DAST)")
+        (
+            "Semgrep",
+            "src/orchestration/runners/semgrep_runner.py",
+            "Static Application Security Testing (SAST)",
+        ),
+        (
+            "Trivy",
+            "src/orchestration/runners/trivy_runner.py",
+            "Software Composition Analysis (SCA)",
+        ),
+        (
+            "OSV-Scanner",
+            "src/orchestration/runners/osv_runner.py",
+            "Open Source Vulnerability Database",
+        ),
+        (
+            "OWASP ZAP",
+            "src/orchestration/runners/zap_runner.py",
+            "Dynamic Application Security Testing (DAST)",
+        ),
     ]
 
     for name, path, description in runners:
@@ -63,7 +83,9 @@ def demonstrate_geotoolkit_features():
 
     # Check container runtime
     try:
-        result = subprocess.run(["podman", "--version"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(
+            ["podman", "--version"], capture_output=True, text=True, timeout=5
+        )
         if result.returncode == 0:
             print(f"✅ Container Runtime: {result.stdout.strip()}")
         else:
@@ -89,7 +111,9 @@ def demonstrate_geotoolkit_features():
 
     if Path("network-allowlist.txt").exists():
         with open("network-allowlist.txt") as f:
-            allowlist = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+            allowlist = [
+                line.strip() for line in f if line.strip() and not line.startswith("#")
+            ]
         print(f"✅ Network Allowlist: {len(allowlist)} host:port entries configured")
 
     # 5. Offline Database Support
@@ -99,7 +123,7 @@ def demonstrate_geotoolkit_features():
     db_files = [
         ("Mock Database", "data/mock-offline-db.json"),
         ("Database Bundle", "data/offline-db.tar.gz"),
-        ("Database Builder", "scripts/build_offline_db.py")
+        ("Database Builder", "scripts/build_offline_db.py"),
     ]
 
     for name, path in db_files:
@@ -152,7 +176,7 @@ def demonstrate_geotoolkit_features():
         "scripts/quick_validation.py",
         "scripts/validate_functionality.py",
         "scripts/test_cli_functionality.py",
-        "scripts/production_validator.py"
+        "scripts/production_validator.py",
     ]
 
     for script in validation_scripts:

@@ -25,10 +25,10 @@ import psutil
 
 # Setup logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
 
 class LoadTestRunner:
     """Main load testing orchestrator."""
@@ -38,7 +38,7 @@ class LoadTestRunner:
             "load_tests": [],
             "performance_metrics": {},
             "errors": [],
-            "summary": {}
+            "summary": {},
         }
         self.temp_dir = None
 
@@ -62,7 +62,7 @@ class LoadTestRunner:
             "javascript": self._create_javascript_project,
             "java": self._create_java_project,
             "go": self._create_go_project,
-            "typescript": self._create_typescript_project
+            "typescript": self._create_typescript_project,
         }
 
         self.test_projects = {}
@@ -204,7 +204,7 @@ CIPHER_SUITE = "DES-CBC-SHA"  # Weak cipher
             "language": "Python",
             "framework": "Flask",
             "expected_issues": 15,
-            "package_files": ["requirements.txt", "setup.py"]
+            "package_files": ["requirements.txt", "setup.py"],
         }
 
     def _create_javascript_project(self, project_dir: Path) -> dict[str, Any]:
@@ -343,7 +343,7 @@ app.listen(3000, () => {
             "language": "JavaScript",
             "framework": "Express.js",
             "expected_issues": 10,
-            "package_files": ["package.json"]
+            "package_files": ["package.json"],
         }
 
     def _create_java_project(self, project_dir: Path) -> dict[str, Any]:
@@ -478,7 +478,7 @@ public class VulnerableController {
             "language": "Java",
             "framework": "Spring Boot",
             "expected_issues": 8,
-            "package_files": ["pom.xml"]
+            "package_files": ["pom.xml"],
         }
 
     def _create_go_project(self, project_dir: Path) -> dict[str, Any]:
@@ -631,7 +631,7 @@ func main() {
             "language": "Go",
             "framework": "Gin",
             "expected_issues": 7,
-            "package_files": ["go.mod"]
+            "package_files": ["go.mod"],
         }
 
     def _create_typescript_project(self, project_dir: Path) -> dict[str, Any]:
@@ -805,27 +805,27 @@ export default app;
             "language": "TypeScript",
             "framework": "Express.js",
             "expected_issues": 9,
-            "package_files": ["package.json", "tsconfig.json"]
+            "package_files": ["package.json", "tsconfig.json"],
         }
 
     def create_test_configs(self):
         """Create test configuration files."""
 
         # Create projects.json with all test projects
-        projects_config = {
-            "projects": []
-        }
+        projects_config = {"projects": []}
 
         for lang, project_info in self.test_projects.items():
-            projects_config["projects"].append({
-                "url": project_info["path"],
-                "name": f"test-{lang}-project",
-                "language": project_info["language"],
-                "description": f"Load test {lang} project",
-                "container_capable": lang in ["python", "javascript", "java"],
-                "dockerfile_present": False,
-                "package_managers": project_info.get("package_files", [])
-            })
+            projects_config["projects"].append(
+                {
+                    "url": project_info["path"],
+                    "name": f"test-{lang}-project",
+                    "language": project_info["language"],
+                    "description": f"Load test {lang} project",
+                    "container_capable": lang in ["python", "javascript", "java"],
+                    "dockerfile_present": False,
+                    "package_managers": project_info.get("package_files", []),
+                }
+            )
 
         projects_file = Path(self.temp_dir) / "projects.json"
         with open(projects_file, "w") as f:
@@ -837,7 +837,7 @@ export default app;
             "vulnerabilities": [
                 {"id": "CVE-2021-44228", "severity": "critical"},
                 {"id": "CVE-2017-5638", "severity": "high"},
-                {"id": "CVE-2019-0232", "severity": "high"}
+                {"id": "CVE-2019-0232", "severity": "high"},
             ]
         }
 
@@ -871,7 +871,9 @@ registry-1.docker.io:443
                 lang = project_langs[i % len(project_langs)]
                 project_info = self.test_projects[lang]
 
-                future = executor.submit(self._simulate_scan, project_info, f"concurrent_{i}")
+                future = executor.submit(
+                    self._simulate_scan, project_info, f"concurrent_{i}"
+                )
                 futures.append(future)
 
             # Collect results
@@ -901,11 +903,13 @@ registry-1.docker.io:443
             "initial_memory_mb": initial_memory,
             "final_memory_mb": final_memory,
             "memory_increase_mb": memory_increase,
-            "scans_per_second": len(results) / total_time if total_time > 0 else 0
+            "scans_per_second": len(results) / total_time if total_time > 0 else 0,
         }
 
         self.results["load_tests"].append(test_result)
-        logger.info(f"Concurrent test completed: {len(results)}/{num_concurrent_scans} scans in {total_time:.2f}s")
+        logger.info(
+            f"Concurrent test completed: {len(results)}/{num_concurrent_scans} scans in {total_time:.2f}s"
+        )
 
         return test_result
 
@@ -927,7 +931,7 @@ registry-1.docker.io:443
                 current_memory = psutil.Process().memory_info().rss / 1024 / 1024
                 peak_memory = max(peak_memory, current_memory)
 
-                logger.info(f"Memory after dataset {i+1}: {current_memory:.1f}MB")
+                logger.info(f"Memory after dataset {i + 1}: {current_memory:.1f}MB")
 
                 # Simulate processing time
                 time.sleep(0.5)
@@ -944,11 +948,13 @@ registry-1.docker.io:443
             "peak_memory_mb": peak_memory,
             "final_memory_mb": final_memory,
             "memory_increase_mb": peak_memory - initial_memory,
-            "memory_recovered": initial_memory - final_memory
+            "memory_recovered": initial_memory - final_memory,
         }
 
         self.results["performance_metrics"]["memory_stress"] = stress_result
-        logger.info(f"Memory stress test: Peak {peak_memory:.1f}MB (+{peak_memory-initial_memory:.1f}MB)")
+        logger.info(
+            f"Memory stress test: Peak {peak_memory:.1f}MB (+{peak_memory - initial_memory:.1f}MB)"
+        )
 
         return stress_result
 
@@ -965,17 +971,19 @@ registry-1.docker.io:443
             # Generate mock findings
             findings = []
             for i in range(size):
-                findings.append({
-                    "id": f"FINDING-{i}",
-                    "severity": ["low", "medium", "high", "critical"][i % 4],
-                    "title": f"Test vulnerability {i}",
-                    "description": f"Description for finding {i}" * 10,
-                    "file": f"src/file_{i % 100}.py",
-                    "line": (i % 1000) + 1,
-                    "cve_id": f"CVE-2024-{1000+i}",
-                    "cvss_score": (i % 10) + 1,
-                    "recommendation": f"Fix recommendation for finding {i}"
-                })
+                findings.append(
+                    {
+                        "id": f"FINDING-{i}",
+                        "severity": ["low", "medium", "high", "critical"][i % 4],
+                        "title": f"Test vulnerability {i}",
+                        "description": f"Description for finding {i}" * 10,
+                        "file": f"src/file_{i % 100}.py",
+                        "line": (i % 1000) + 1,
+                        "cve_id": f"CVE-2024-{1000 + i}",
+                        "cvss_score": (i % 10) + 1,
+                        "recommendation": f"Fix recommendation for finding {i}",
+                    }
+                )
 
             # Generate report
             report_content = self._generate_load_test_report(findings)
@@ -985,10 +993,14 @@ registry-1.docker.io:443
                 "findings_count": size,
                 "generation_time": generation_time,
                 "report_size_chars": len(report_content),
-                "findings_per_second": size / generation_time if generation_time > 0 else 0
+                "findings_per_second": size / generation_time
+                if generation_time > 0
+                else 0,
             }
 
-            logger.info(f"Report with {size} findings: {generation_time:.2f}s ({len(report_content)} chars)")
+            logger.info(
+                f"Report with {size} findings: {generation_time:.2f}s ({len(report_content)} chars)"
+            )
 
         self.results["performance_metrics"]["report_generation"] = results
         return results
@@ -1001,13 +1013,15 @@ registry-1.docker.io:443
         scenarios = [
             {"memory_limit": "512m", "cpu_limit": "0.5"},
             {"memory_limit": "1g", "cpu_limit": "1.0"},
-            {"memory_limit": "2g", "cpu_limit": "2.0"}
+            {"memory_limit": "2g", "cpu_limit": "2.0"},
         ]
 
         results = {}
 
         for scenario in scenarios:
-            scenario_name = f"mem_{scenario['memory_limit']}_cpu_{scenario['cpu_limit']}"
+            scenario_name = (
+                f"mem_{scenario['memory_limit']}_cpu_{scenario['cpu_limit']}"
+            )
             start_time = time.time()
 
             # Simulate resource-constrained scanning
@@ -1024,7 +1038,9 @@ registry-1.docker.io:443
                 "total_scans": len(scan_results),
                 "total_time": total_time,
                 "average_scan_time": total_time / len(scan_results),
-                "successful_scans": len([r for r in scan_results if r["status"] == "success"])
+                "successful_scans": len(
+                    [r for r in scan_results if r["status"] == "success"]
+                ),
             }
 
         self.results["performance_metrics"]["container_resources"] = results
@@ -1032,7 +1048,9 @@ registry-1.docker.io:443
 
         return results
 
-    def _simulate_scan(self, project_info: dict[str, Any], scan_id: str) -> dict[str, Any]:
+    def _simulate_scan(
+        self, project_info: dict[str, Any], scan_id: str
+    ) -> dict[str, Any]:
         """Simulate a security scan."""
 
         # Simulate scan time based on project complexity
@@ -1041,6 +1059,7 @@ registry-1.docker.io:443
 
         # Add some randomness to simulate real-world variance
         import random
+
         actual_scan_time = base_scan_time + random.uniform(-0.2, 0.5)
 
         time.sleep(max(0.1, actual_scan_time))  # Minimum 0.1s
@@ -1052,10 +1071,12 @@ registry-1.docker.io:443
             "scan_duration": actual_scan_time,
             "issues_found": expected_issues + random.randint(-1, 2),
             "status": "success",
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
-    def _simulate_constrained_scan(self, project_info: dict[str, Any], constraints: dict[str, str]) -> dict[str, Any]:
+    def _simulate_constrained_scan(
+        self, project_info: dict[str, Any], constraints: dict[str, str]
+    ) -> dict[str, Any]:
         """Simulate scan under resource constraints."""
 
         # Simulate the effect of resource constraints
@@ -1077,7 +1098,7 @@ registry-1.docker.io:443
             "constraints": constraints,
             "scan_time": adjusted_time,
             "status": "success",
-            "memory_pressure": memory_factor > 1.2
+            "memory_pressure": memory_factor > 1.2,
         }
 
     def _create_large_scan_result(self, num_findings: int) -> dict[str, Any]:
@@ -1101,21 +1122,23 @@ registry-1.docker.io:443
                         "impact": "medium",
                         "effort": "low",
                         "tags": [f"tag{j}" for j in range(i % 5)],
-                        "references": [f"https://example.com/ref{j}" for j in range(i % 3)]
+                        "references": [
+                            f"https://example.com/ref{j}" for j in range(i % 3)
+                        ],
                     },
                     "code_context": {
-                        "before": [f"line {i-j}" for j in range(3, 0, -1)],
+                        "before": [f"line {i - j}" for j in range(3, 0, -1)],
                         "vulnerable_line": f"vulnerable code line {i}",
-                        "after": [f"line {i+j}" for j in range(1, 4)]
-                    }
+                        "after": [f"line {i + j}" for j in range(1, 4)],
+                    },
                 }
                 for i in range(num_findings)
             ],
             "statistics": {
                 "total_files_scanned": num_findings // 10,
                 "total_lines_scanned": num_findings * 100,
-                "scan_duration": num_findings * 0.001
-            }
+                "scan_duration": num_findings * 0.001,
+            },
         }
 
     def _generate_load_test_report(self, findings: list[dict[str, Any]]) -> str:
@@ -1133,36 +1156,38 @@ registry-1.docker.io:443
 This report contains the results of a comprehensive security scan performed as part of load testing.
 
 **Total Findings:** {len(findings)}
-**Critical:** {severity_counts.get('critical', 0)}
-**High:** {severity_counts.get('high', 0)}
-**Medium:** {severity_counts.get('medium', 0)}
-**Low:** {severity_counts.get('low', 0)}
+**Critical:** {severity_counts.get("critical", 0)}
+**High:** {severity_counts.get("high", 0)}
+**Medium:** {severity_counts.get("medium", 0)}
+**Low:** {severity_counts.get("low", 0)}
 
 ## Scan Statistics
-- Files analyzed: {len(set(f['file'] for f in findings))}
-- Average CVSS Score: {sum(f.get('cvss_score', 5) for f in findings) / len(findings):.1f}
-- Scan completed at: {time.strftime('%Y-%m-%d %H:%M:%S')}
+- Files analyzed: {len(set(f["file"] for f in findings))}
+- Average CVSS Score: {sum(f.get("cvss_score", 5) for f in findings) / len(findings):.1f}
+- Scan completed at: {time.strftime("%Y-%m-%d %H:%M:%S")}
 
 ## Critical Findings
 
 """
 
         # Include detailed information for critical and high findings
-        critical_findings = [f for f in findings if f["severity"] in ["critical", "high"]]
+        critical_findings = [
+            f for f in findings if f["severity"] in ["critical", "high"]
+        ]
 
         for i, finding in enumerate(critical_findings[:20]):  # First 20 critical/high
-            report += f"""### {finding['id']} - {finding['severity'].upper()}
+            report += f"""### {finding["id"]} - {finding["severity"].upper()}
 
-**Title:** {finding['title']}
-**File:** {finding['file']}:{finding['line']}
-**CVE ID:** {finding.get('cve_id', 'N/A')}
-**CVSS Score:** {finding.get('cvss_score', 'N/A')}
+**Title:** {finding["title"]}
+**File:** {finding["file"]}:{finding["line"]}
+**CVE ID:** {finding.get("cve_id", "N/A")}
+**CVSS Score:** {finding.get("cvss_score", "N/A")}
 
 **Description:**
-{finding['description']}
+{finding["description"]}
 
 **Recommendation:**
-{finding.get('recommendation', 'Review and remediate this vulnerability')}
+{finding.get("recommendation", "Review and remediate this vulnerability")}
 
 ---
 
@@ -1183,7 +1208,12 @@ This report contains the results of a comprehensive security scan performed as p
         for finding in findings:
             file_name = finding["file"]
             if file_name not in file_stats:
-                file_stats[file_name] = {"critical": 0, "high": 0, "medium": 0, "low": 0}
+                file_stats[file_name] = {
+                    "critical": 0,
+                    "high": 0,
+                    "medium": 0,
+                    "low": 0,
+                }
             file_stats[file_name][finding["severity"]] += 1
 
         for file_name, stats in sorted(file_stats.items())[:50]:  # First 50 files
@@ -1197,14 +1227,14 @@ This report contains the results of a comprehensive security scan performed as p
 
 ## Recommendations
 
-1. **Immediate Action Required:** Address all {severity_counts.get('critical', 0)} critical vulnerabilities
-2. **High Priority:** Remediate {severity_counts.get('high', 0)} high-severity issues  
+1. **Immediate Action Required:** Address all {severity_counts.get("critical", 0)} critical vulnerabilities
+2. **High Priority:** Remediate {severity_counts.get("high", 0)} high-severity issues  
 3. **Review Process:** Implement security code review for medium and low findings
 4. **Prevention:** Add security linting and SAST tools to CI/CD pipeline
 
 ## Report Metadata
 
-- Report generated: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}
+- Report generated: {time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())}
 - Total findings processed: {len(findings)}
 - Report size: {len(findings)} findings across {len(file_stats)} files
 - Load test identifier: geotoolkit-load-test-{int(time.time())}
@@ -1247,7 +1277,7 @@ This report contains the results of a comprehensive security scan performed as p
             "tests_completed": len(self.results["load_tests"]),
             "performance_tests": len(self.results["performance_metrics"]),
             "total_errors": len(self.results["errors"]),
-            "test_timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+            "test_timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
         }
 
         logger.info(f"Load testing suite completed in {total_time:.2f}s")
@@ -1258,6 +1288,7 @@ This report contains the results of a comprehensive security scan performed as p
         """Clean up test environment."""
         if self.temp_dir and os.path.exists(self.temp_dir):
             import shutil
+
             shutil.rmtree(self.temp_dir)
             logger.info(f"Cleaned up test environment: {self.temp_dir}")
 
@@ -1269,27 +1300,21 @@ def main():
         "--concurrent-scans",
         type=int,
         default=10,
-        help="Number of concurrent scans to run (default: 10)"
+        help="Number of concurrent scans to run (default: 10)",
     )
     parser.add_argument(
-        "--memory-test",
-        action="store_true",
-        help="Run memory stress testing"
+        "--memory-test", action="store_true", help="Run memory stress testing"
     )
     parser.add_argument(
-        "--report-test",
-        action="store_true",
-        help="Run report generation load testing"
+        "--report-test", action="store_true", help="Run report generation load testing"
     )
     parser.add_argument(
-        "--full-suite",
-        action="store_true",
-        help="Run complete load testing suite"
+        "--full-suite", action="store_true", help="Run complete load testing suite"
     )
     parser.add_argument(
         "--output",
         default="load_test_results.json",
-        help="Output file for test results"
+        help="Output file for test results",
     )
 
     args = parser.parse_args()

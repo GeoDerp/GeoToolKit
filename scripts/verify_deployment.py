@@ -43,8 +43,12 @@ def verify_cli_package():
         try:
             # Dynamically find the .dist-info directory
             dist_info_dir = next(
-                (name for name in zf.namelist() if name.endswith(".dist-info/entry_points.txt")),
-                None
+                (
+                    name
+                    for name in zf.namelist()
+                    if name.endswith(".dist-info/entry_points.txt")
+                ),
+                None,
             )
             if not dist_info_dir:
                 print("❌ entry_points.txt not found in any .dist-info directory")
@@ -114,7 +118,14 @@ def verify_package_metadata():
     with zipfile.ZipFile(wheel_file, "r") as zf:
         try:
             # Dynamically find the .dist-info directory
-            dist_info_dir = next((name for name in zf.namelist() if name.endswith(".dist-info/METADATA")), None)
+            dist_info_dir = next(
+                (
+                    name
+                    for name in zf.namelist()
+                    if name.endswith(".dist-info/METADATA")
+                ),
+                None,
+            )
             if not dist_info_dir:
                 print("❌ Could not find METADATA file in any .dist-info directory")
                 return False
