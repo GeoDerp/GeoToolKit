@@ -80,7 +80,12 @@ class ZapRunner:
         ]
         # Prefer API key if provided; otherwise allow disabling only when explicitly configured
         if zap_api_key:
-            podman_command += ["-config", "api.disablekey=false", "-config", f"api.key={zap_api_key}"]
+            podman_command += [
+                "-config",
+                "api.disablekey=false",
+                "-config",
+                f"api.key={zap_api_key}",
+            ]
         else:
             # Maintain compatibility for local/dev unless explicitly disabled differently
             podman_command += [

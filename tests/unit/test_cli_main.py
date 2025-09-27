@@ -16,7 +16,10 @@ def write_projects(tmp_path: Path) -> Path:
                 "network_config": {
                     "ports": ["8080"],
                     "protocol": "http",
-                    "allowed_egress": {"localhost": ["8080"], "external_hosts": ["example.com"]},
+                    "allowed_egress": {
+                        "localhost": ["8080"],
+                        "external_hosts": ["example.com"],
+                    },
                 },
             }
         ]
@@ -46,7 +49,9 @@ def test_cli_runs_and_generates_report(tmp_path):
 
     with patch("sys.argv", argv):
         # Avoid actually invoking containerized scanners
-        with mock_patch("src.orchestration.workflow.Workflow._run_security_scans", return_value=[]):
+        with mock_patch(
+            "src.orchestration.workflow.Workflow._run_security_scans", return_value=[]
+        ):
             cli_main()
 
     assert out.exists()

@@ -1266,7 +1266,9 @@ class TestProductionReadiness:
                         f"Invalid seccomp profile format: {profile}"
                     )
                 except json.JSONDecodeError as e:
-                    raise AssertionError(f"Invalid JSON in seccomp profile: {profile}") from e
+                    raise AssertionError(
+                        f"Invalid JSON in seccomp profile: {profile}"
+                    ) from e
 
         logger.info("✅ All seccomp profiles validated")
 
@@ -1440,6 +1442,7 @@ class TestProductionReadiness:
         logger.info("Testing memory usage and resource limits...")
 
         import gc
+
         try:
             import psutil  # type: ignore
         except Exception:
@@ -1626,6 +1629,8 @@ Description: {finding["description"]}
                 blocked.append(request)
 
         # Ensure allowlist actually allows something (simple sanity)
-        assert any(r in allowed_hosts for r in test_requests), "No requests matched allowlist entries"
+        assert any(r in allowed_hosts for r in test_requests), (
+            "No requests matched allowlist entries"
+        )
 
         return {"blocked": blocked, "allowed": allowed}
