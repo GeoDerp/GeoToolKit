@@ -5,8 +5,8 @@ Implements the comprehensive validation plan with automated reporting
 """
 
 import json
+import re
 import subprocess
-import time
 from datetime import datetime
 from pathlib import Path
 import sys
@@ -177,16 +177,24 @@ class ValidationExecutor:
                 return False
             
             # Read and analyze report
-            with open(output_file, "r") as f:
+            with open(output_file) as f:
                 report_content = f.read()
             
-            # Basic validation checks
+            # Basic validation checks using regex for robustness
+            header_h2 = re.compile(r"^##\s+.+", re.MULTILINE)
+            has_h2_sections = bool(header_h2.search(report_content))
+            has_sast = bool(
+                re.search(r"\b(SAST|Semgrep)\b", report_content, re.IGNORECASE)
+            )
+            has_sca = bool(
+                re.search(r"\b(SCA|Trivy|OSV)\b", report_content, re.IGNORECASE)
+            )
             validation_checks = {
-                "has_project_sections": "##" in report_content,
-                "has_sast_results": "SAST" in report_content or "Semgrep" in report_content,
-                "has_sca_results": "SCA" in report_content or "Trivy" in report_content or "OSV" in report_content,
+                "has_project_sections": has_h2_sections,
+                "has_sast_results": has_sast,
+                "has_sca_results": has_sca,
                 "non_empty_report": len(report_content) > 500,
-                "no_fatal_errors": "FATAL" not in report_content.upper()
+                "no_fatal_errors": "FATAL" not in report_content.upper(),
             }
             
             self.results["static_scan_results"]["validation_checks"] = validation_checks
@@ -310,7 +318,7 @@ class ValidationExecutor:
             
             # Generate validation report
             with open(validation_log, "w") as f:
-                f.write(f"# GeoToolKit Validation Report\n\n")
+                f.write("# GeoToolKit Validation Report\n\n")
                 f.write(f"**Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
                 f.write(f"**Validation ID**: {self.timestamp}\n")
                 f.write(f"**Success Rate**: {success_rate:.1f}%\n\n")
@@ -355,7 +363,7 @@ class ValidationExecutor:
                     if results.get("log_file"):
                         f.write(f"- {results['log_file']}\n")
                 
-                f.write(f"\n## Raw Results\n")
+                f.write("\n## Raw Results\n")
                 f.write("```json\n")
                 f.write(json.dumps(self.results, indent=2))
                 f.write("\n```\n")
@@ -373,7 +381,7 @@ class ValidationExecutor:
     def _analyze_static_logs(self, log_file: Path) -> None:
         """Analyze static analysis logs for metrics"""
         try:
-            with open(log_file, "r") as f:
+            with open(log_file) as f:
                 log_content = f.read()
             
             # Look for scanner-specific indicators

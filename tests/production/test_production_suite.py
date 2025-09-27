@@ -1427,11 +1427,12 @@ class TestProductionReadiness:
         logger.info(f"✅ Network allowlist validated - {len(allowed_hosts)} entries")
 
         # Test network policy enforcement (simulation)
-        blocked_requests = self._simulate_network_requests(allowed_hosts)
+        ni_results = self._simulate_network_requests(allowed_hosts)
 
         production_test_suite.test_results["network_isolation"] = {
             "allowlist_entries": len(allowed_hosts),
-            "blocked_requests": blocked_requests,
+            "blocked_requests": ni_results.get("blocked", []),
+            "allowed_requests": ni_results.get("allowed", []),
         }
 
     def test_memory_and_resource_limits(self, production_test_suite):
@@ -1439,8 +1440,10 @@ class TestProductionReadiness:
         logger.info("Testing memory usage and resource limits...")
 
         import gc
-
-        import psutil
+        try:
+            import psutil  # type: ignore
+        except Exception:
+            pytest.skip("psutil is not installed; skipping memory/resource limit test.")
 
         initial_memory = psutil.Process().memory_info().rss / 1024 / 1024  # MB
 
@@ -1605,7 +1608,7 @@ Description: {finding["description"]}
         }
 
     def _simulate_network_requests(self, allowed_hosts):
-        """Simulate network request validation."""
+        """Simulate network request validation, tracking both allowed and blocked cases."""
         test_requests = [
             "malicious-site.com:80",
             "localhost:8080",  # Should be allowed
@@ -1614,9 +1617,15 @@ Description: {finding["description"]}
             "127.0.0.1:3000",  # Should be allowed
         ]
 
-        blocked = []
+        allowed: list[str] = []
+        blocked: list[str] = []
         for request in test_requests:
-            if request not in allowed_hosts:
+            if request in allowed_hosts:
+                allowed.append(request)
+            else:
                 blocked.append(request)
 
-        return blocked
+        # Ensure allowlist actually allows something (simple sanity)
+        assert any(r in allowed_hosts for r in test_requests), "No requests matched allowlist entries"
+
+        return {"blocked": blocked, "allowed": allowed}

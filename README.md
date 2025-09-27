@@ -179,6 +179,27 @@ python src/main.py \
   --network-allowlist network-allowlist.txt
 ```
 
+### Environment Variables
+
+You can tune container networking and authentication via environment variables. Sensible, secure defaults are used when not set.
+
+- ZAP (DAST)
+  - ZAP_API_KEY: If set, the ZAP container is started with API key authentication enabled and the provided key configured.
+  - ZAP_DISABLE_API_KEY: Set to 1/true to explicitly disable API key auth. Avoid in production.
+  - ZAP_PORT: Local port to expose the ZAP API (default 8080).
+  - ZAP_IMAGE: Container image to use (default ghcr.io/zaproxy/zaproxy:latest).
+  - ZAP_BASE_URL: Connect to an existing ZAP instance instead of starting a container.
+  - ZAP_PODMAN_NETWORK: Podman --network value to use (e.g., bridge). Optional.
+  - ZAP_PODMAN_PULL: Podman --pull policy: always|missing|never (default missing).
+  - ZAP_PODMAN_ARGS: Extra Podman args appended as-is.
+  - CONTAINER_HOST_HOSTNAME: Hostname used inside containers to reach the host (default host.containers.internal). Set for environments where the default isn't available.
+
+- Semgrep (SAST)
+  - SEMGREP_PACK: When set, runs Semgrep using this config pack.
+  - SEMGREP_NETWORK: Podman network mode for Semgrep container. Defaults to --network=none for isolation. Avoid host networking.
+
+Security note: Host networking is intentionally avoided by default. Explicitly opt into networked modes only when required and understood.
+
 ## 📚 Offline Database Setup
 
 For optimal security and performance in air-gapped environments, GeoToolKit supports offline vulnerability databases.
@@ -226,32 +247,6 @@ For manual database configuration:
 - For strictly offline environments, consider mirroring images to a local registry
 
 ## 🛠️ Development
-
-### GitHub Copilot Setup
-
-This project is configured with GitHub Copilot recommendations for enhanced development experience:
-
-1. **Install recommended extensions**: When you open this project in VSCode, you'll be prompted to install recommended extensions including:
-   - GitHub Copilot (`GitHub.copilot`)
-   - GitHub Copilot Chat (`GitHub.copilot-chat`)
-   - Python development tools
-   - Security scanning tools
-
-2. **Copilot configuration**: The project includes optimized Copilot settings in `.vscode/settings.json` for:
-   - Enhanced Python code suggestions
-   - Security-focused recommendations
-   - Project-specific context awareness
-
-3. **Project instructions**: GitHub Copilot will use the instructions in `.github/copilot-instructions.md` to provide better context-aware suggestions for this security scanning project.
-
-4. **Copilot ignore patterns**: Sensitive files and build artifacts are excluded from Copilot analysis via `.copilotignore`.
-
-5. **Verification**: Run the verification script to ensure proper setup:
-   ```bash
-   python3 scripts/verify_copilot_setup.py
-   ```
-
-For detailed setup instructions, see [docs/COPILOT_SETUP.md](docs/COPILOT_SETUP.md).
 
 ### Running Tests
 

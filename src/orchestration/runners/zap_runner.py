@@ -61,6 +61,14 @@ class ZapRunner:
         extra_podman_args = os.environ.get("ZAP_PODMAN_ARGS")
         if extra_podman_args:
             podman_command += extra_podman_args.split()
+        # ZAP API authentication handling
+        zap_api_key = os.environ.get("ZAP_API_KEY")
+        zap_disable_api_key = os.environ.get("ZAP_DISABLE_API_KEY", "0").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+
         podman_command += [
             zap_image,
             "zap.sh",
@@ -69,9 +77,16 @@ class ZapRunner:
             zap_port,
             "-host",
             "0.0.0.0",
-            "-config",
-            "api.disablekey=true",
         ]
+        # Prefer API key if provided; otherwise allow disabling only when explicitly configured
+        if zap_api_key:
+            podman_command += ["-config", "api.disablekey=false", "-config", f"api.key={zap_api_key}"]
+        else:
+            # Maintain compatibility for local/dev unless explicitly disabled differently
+            podman_command += [
+                "-config",
+                f"api.disablekey={'true' if zap_disable_api_key or not zap_api_key else 'false'}",
+            ]
         if skip_container:
             print(
                 "ZAP_SKIP_CONTAINER is set; will not start a container and will connect to an existing ZAP instance."
@@ -153,8 +168,11 @@ class ZapRunner:
                 try:
                     parsed = urlparse(target_url)
                     if parsed.hostname in {"localhost", "127.0.0.1", "::1"}:
-                        # Use special host name that resolves to the host from inside containers
-                        new_netloc = f"host.containers.internal:{parsed.port or (80 if parsed.scheme == 'http' else 443)}"
+                        # Use a configurable hostname that resolves to the host from inside containers
+                        container_host_hostname = os.environ.get(
+                            "CONTAINER_HOST_HOSTNAME", "host.containers.internal"
+                        )
+                        new_netloc = f"{container_host_hostname}:{parsed.port or (80 if parsed.scheme == 'http' else 443)}"
                         mapped_target_url = urlunparse(
                             (
                                 parsed.scheme,

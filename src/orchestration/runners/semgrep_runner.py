@@ -20,11 +20,13 @@ class SemgrepRunner:
         # Consolidate logic to remove the test-specific backdoor
         semgrep_pack = os.environ.get("SEMGREP_PACK")
         if semgrep_pack:
-            network_mode = (
-                "--network=host"
-                if os.environ.get("SEMGREP_ONLINE", "0") == "1"
-                else "--network=none"
-            )
+            # Default to strict isolation. Allow explicit override via SEMGREP_NETWORK.
+            # Avoid using host networking by default due to security implications.
+            semgrep_network = os.environ.get("SEMGREP_NETWORK")
+            if semgrep_network:
+                network_mode = "--network=" + semgrep_network
+            else:
+                network_mode = "--network=none"
             command = [
                 "podman",
                 "run",
