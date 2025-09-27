@@ -145,7 +145,7 @@ jobs:
           # Install safety to scan for known vulnerabilities
           pip install safety
           # Check the requirements for known vulnerabilities
-          safety check || echo "Safety check completed with warnings"
+          safety check
           # Verify package contents
           find dist -name "*.whl" -exec unzip -l {} \; | head -20 || true
           echo "✅ Package security scan completed"
