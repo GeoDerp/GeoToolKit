@@ -107,7 +107,16 @@ def verify_package_metadata():
     wheel_file = wheel_files[0]
     with zipfile.ZipFile(wheel_file, "r") as zf:
         try:
-            metadata = zf.read("geotoolkit-0.1.0.dist-info/METADATA").decode()
+            # Dynamically find the .dist-info directory
+            dist_info_dir = None
+            for name in zf.namelist():
+                if name.endswith(".dist-info/METADATA"):
+                    dist_info_dir = name
+                    break
+            if not dist_info_dir:
+                print("❌ Could not find METADATA file in any .dist-info directory")
+                return False
+            metadata = zf.read(dist_info_dir).decode()
 
             # Check key metadata fields
             checks = [
