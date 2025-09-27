@@ -246,6 +246,13 @@ This project is configured with GitHub Copilot recommendations for enhanced deve
 
 4. **Copilot ignore patterns**: Sensitive files and build artifacts are excluded from Copilot analysis via `.copilotignore`.
 
+5. **Verification**: Run the verification script to ensure proper setup:
+   ```bash
+   python3 scripts/verify_copilot_setup.py
+   ```
+
+For detailed setup instructions, see [docs/COPILOT_SETUP.md](docs/COPILOT_SETUP.md).
+
 ### Running Tests
 
 ```bash
