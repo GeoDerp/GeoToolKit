@@ -34,7 +34,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run Python CI with uv
-        uses: ./.github/actions/python-uv/composite.yml
+        uses: ./.github/actions/ci
         with: 
           pytest_coverage_xml_file_name: ${{ env.PYTEST_COVERAGE_XML_FILE_NAME }}
           source_dir: ${{ env.PYTHON_APP_SOURCE_DIR }}
