@@ -12,16 +12,14 @@ This script performs comprehensive load testing and performance validation:
 """
 
 import argparse
-import asyncio
 import json
 import logging
 import os
-import subprocess
 import tempfile
 import time
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any
 
 import psutil
 
@@ -34,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 class LoadTestRunner:
     """Main load testing orchestrator."""
-    
+
     def __init__(self):
         self.results = {
             "load_tests": [],
@@ -43,20 +41,20 @@ class LoadTestRunner:
             "summary": {}
         }
         self.temp_dir = None
-        
+
     def setup_test_environment(self):
         """Setup test environment with sample projects."""
         self.temp_dir = tempfile.mkdtemp(prefix="geotoolkit_load_test_")
         logger.info(f"Setting up load test environment: {self.temp_dir}")
-        
+
         # Create diverse test projects
         self.create_test_projects()
-        
+
         # Setup configuration files
         self.create_test_configs()
-        
+
         return self.temp_dir
-        
+
     def create_test_projects(self):
         """Create test projects for different programming languages."""
         projects = {
@@ -66,21 +64,21 @@ class LoadTestRunner:
             "go": self._create_go_project,
             "typescript": self._create_typescript_project
         }
-        
+
         self.test_projects = {}
-        
+
         for lang, creator in projects.items():
             project_dir = Path(self.temp_dir) / f"test_{lang}_project"
             project_dir.mkdir(exist_ok=True)
-            
+
             project_info = creator(project_dir)
             self.test_projects[lang] = project_info
-            
+
             logger.info(f"Created {lang} test project at {project_dir}")
-            
-    def _create_python_project(self, project_dir: Path) -> Dict[str, Any]:
+
+    def _create_python_project(self, project_dir: Path) -> dict[str, Any]:
         """Create a Python project with various vulnerabilities."""
-        
+
         # Main application with vulnerabilities
         main_py = project_dir / "app.py"
         main_py.write_text("""
@@ -143,7 +141,7 @@ def fetch_url():
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')  # Debug mode in production
 """)
-        
+
         # Requirements with vulnerable packages
         requirements = project_dir / "requirements.txt"
         requirements.write_text("""
@@ -156,9 +154,9 @@ urllib3==1.24.1
 Django==2.0.1
 cryptography==2.3
 """)
-        
+
         # Setup.py with more vulnerabilities
-        setup_py = project_dir / "setup.py" 
+        setup_py = project_dir / "setup.py"
         setup_py.write_text("""
 from setuptools import setup, find_packages
 import os
@@ -180,7 +178,7 @@ setup(
     data_files=[('/etc/', ['config.conf'])],
 )
 """)
-        
+
         # Config files that might have issues
         config = project_dir / "config.py"
         config.write_text("""
@@ -200,7 +198,7 @@ ALLOWED_HOSTS = ['*']
 # Weak cipher configurations
 CIPHER_SUITE = "DES-CBC-SHA"  # Weak cipher
 """)
-        
+
         return {
             "path": str(project_dir),
             "language": "Python",
@@ -208,10 +206,10 @@ CIPHER_SUITE = "DES-CBC-SHA"  # Weak cipher
             "expected_issues": 15,
             "package_files": ["requirements.txt", "setup.py"]
         }
-        
-    def _create_javascript_project(self, project_dir: Path) -> Dict[str, Any]:
+
+    def _create_javascript_project(self, project_dir: Path) -> dict[str, Any]:
         """Create a JavaScript/Node.js project."""
-        
+
         package_json = project_dir / "package.json"
         package_json.write_text("""
 {
@@ -234,7 +232,7 @@ CIPHER_SUITE = "DES-CBC-SHA"  # Weak cipher
   }
 }
 """)
-        
+
         server_js = project_dir / "server.js"
         server_js.write_text("""
 const express = require('express');
@@ -339,7 +337,7 @@ app.listen(3000, () => {
     console.log('Vulnerable Node.js app running on port 3000');
 });
 """)
-        
+
         return {
             "path": str(project_dir),
             "language": "JavaScript",
@@ -347,10 +345,10 @@ app.listen(3000, () => {
             "expected_issues": 10,
             "package_files": ["package.json"]
         }
-        
-    def _create_java_project(self, project_dir: Path) -> Dict[str, Any]:
+
+    def _create_java_project(self, project_dir: Path) -> dict[str, Any]:
         """Create a Java project with Spring Boot."""
-        
+
         pom_xml = project_dir / "pom.xml"
         pom_xml.write_text("""
 <?xml version="1.0" encoding="UTF-8"?>
@@ -391,10 +389,10 @@ app.listen(3000, () => {
     </dependencies>
 </project>
 """)
-        
+
         src_dir = project_dir / "src" / "main" / "java" / "com" / "example"
         src_dir.mkdir(parents=True, exist_ok=True)
-        
+
         controller = src_dir / "VulnerableController.java"
         controller.write_text("""
 package com.example;
@@ -474,7 +472,7 @@ public class VulnerableController {
     }
 }
 """)
-        
+
         return {
             "path": str(project_dir),
             "language": "Java",
@@ -482,10 +480,10 @@ public class VulnerableController {
             "expected_issues": 8,
             "package_files": ["pom.xml"]
         }
-        
-    def _create_go_project(self, project_dir: Path) -> Dict[str, Any]:
+
+    def _create_go_project(self, project_dir: Path) -> dict[str, Any]:
         """Create a Go project."""
-        
+
         go_mod = project_dir / "go.mod"
         go_mod.write_text("""
 module vulnerable-go-app
@@ -499,7 +497,7 @@ require (
     gopkg.in/yaml.v2 v2.2.8
 )
 """)
-        
+
         main_go = project_dir / "main.go"
         main_go.write_text("""
 package main
@@ -627,7 +625,7 @@ func main() {
     r.Run(":8080")
 }
 """)
-        
+
         return {
             "path": str(project_dir),
             "language": "Go",
@@ -635,10 +633,10 @@ func main() {
             "expected_issues": 7,
             "package_files": ["go.mod"]
         }
-        
-    def _create_typescript_project(self, project_dir: Path) -> Dict[str, Any]:
+
+    def _create_typescript_project(self, project_dir: Path) -> dict[str, Any]:
         """Create a TypeScript project."""
-        
+
         package_json = project_dir / "package.json"
         package_json.write_text("""
 {
@@ -660,7 +658,7 @@ func main() {
   }
 }
 """)
-        
+
         tsconfig = project_dir / "tsconfig.json"
         tsconfig.write_text("""
 {
@@ -674,10 +672,10 @@ func main() {
   }
 }
 """)
-        
+
         src_dir = project_dir / "src"
         src_dir.mkdir(exist_ok=True)
-        
+
         server_ts = src_dir / "server.ts"
         server_ts.write_text("""
 import express from 'express';
@@ -801,23 +799,23 @@ app.get('/file/:filename', (req, res) => {
 
 export default app;
 """)
-        
+
         return {
             "path": str(project_dir),
-            "language": "TypeScript", 
+            "language": "TypeScript",
             "framework": "Express.js",
             "expected_issues": 9,
             "package_files": ["package.json", "tsconfig.json"]
         }
-        
+
     def create_test_configs(self):
         """Create test configuration files."""
-        
+
         # Create projects.json with all test projects
         projects_config = {
             "projects": []
         }
-        
+
         for lang, project_info in self.test_projects.items():
             projects_config["projects"].append({
                 "url": project_info["path"],
@@ -828,11 +826,11 @@ export default app;
                 "dockerfile_present": False,
                 "package_managers": project_info.get("package_files", [])
             })
-            
+
         projects_file = Path(self.temp_dir) / "projects.json"
-        with open(projects_file, 'w') as f:
+        with open(projects_file, "w") as f:
             json.dump(projects_config, f, indent=2)
-            
+
         # Create mock database
         db_file = Path(self.temp_dir) / "mock_db.tar.gz"
         mock_db_content = {
@@ -842,10 +840,10 @@ export default app;
                 {"id": "CVE-2019-0232", "severity": "high"}
             ]
         }
-        
-        with open(db_file, 'w') as f:
+
+        with open(db_file, "w") as f:
             json.dump(mock_db_content, f)
-            
+
         # Create network allowlist
         allowlist_file = Path(self.temp_dir) / "network_allowlist.txt"
         allowlist_file.write_text("""localhost:8080
@@ -853,29 +851,29 @@ export default app;
 example.com:443
 registry-1.docker.io:443
 """)
-        
+
         logger.info("Test configuration files created")
-        
+
     def run_concurrent_scan_test(self, num_concurrent_scans: int = 10):
         """Test concurrent scanning performance."""
         logger.info(f"Running concurrent scan test with {num_concurrent_scans} scans")
-        
+
         start_time = time.time()
         initial_memory = psutil.Process().memory_info().rss / 1024 / 1024
-        
+
         # Simulate concurrent scans
         with ThreadPoolExecutor(max_workers=min(num_concurrent_scans, 8)) as executor:
             futures = []
-            
+
             for i in range(num_concurrent_scans):
                 # Rotate through different project types
                 project_langs = list(self.test_projects.keys())
                 lang = project_langs[i % len(project_langs)]
                 project_info = self.test_projects[lang]
-                
+
                 future = executor.submit(self._simulate_scan, project_info, f"concurrent_{i}")
                 futures.append(future)
-                
+
             # Collect results
             results = []
             for future in as_completed(futures):
@@ -885,15 +883,15 @@ registry-1.docker.io:443
                 except Exception as e:
                     logger.error(f"Concurrent scan failed: {e}")
                     self.results["errors"].append(str(e))
-                    
+
         end_time = time.time()
         final_memory = psutil.Process().memory_info().rss / 1024 / 1024
-        
+
         # Calculate metrics
         total_time = end_time - start_time
         avg_scan_time = total_time / len(results) if results else 0
         memory_increase = final_memory - initial_memory
-        
+
         test_result = {
             "test_type": "concurrent_scans",
             "num_scans": num_concurrent_scans,
@@ -905,19 +903,19 @@ registry-1.docker.io:443
             "memory_increase_mb": memory_increase,
             "scans_per_second": len(results) / total_time if total_time > 0 else 0
         }
-        
+
         self.results["load_tests"].append(test_result)
         logger.info(f"Concurrent test completed: {len(results)}/{num_concurrent_scans} scans in {total_time:.2f}s")
-        
+
         return test_result
-        
+
     def run_memory_stress_test(self):
         """Test memory usage under stress."""
         logger.info("Running memory stress test")
-        
+
         initial_memory = psutil.Process().memory_info().rss / 1024 / 1024
         peak_memory = initial_memory
-        
+
         # Simulate processing large scan results
         large_datasets = []
         try:
@@ -925,21 +923,21 @@ registry-1.docker.io:443
                 # Create large mock scan results
                 dataset = self._create_large_scan_result(5000 + i * 1000)
                 large_datasets.append(dataset)
-                
+
                 current_memory = psutil.Process().memory_info().rss / 1024 / 1024
                 peak_memory = max(peak_memory, current_memory)
-                
+
                 logger.info(f"Memory after dataset {i+1}: {current_memory:.1f}MB")
-                
+
                 # Simulate processing time
                 time.sleep(0.5)
-                
+
         finally:
             # Cleanup
             large_datasets.clear()
-            
+
         final_memory = psutil.Process().memory_info().rss / 1024 / 1024
-        
+
         stress_result = {
             "test_type": "memory_stress",
             "initial_memory_mb": initial_memory,
@@ -948,22 +946,22 @@ registry-1.docker.io:443
             "memory_increase_mb": peak_memory - initial_memory,
             "memory_recovered": initial_memory - final_memory
         }
-        
+
         self.results["performance_metrics"]["memory_stress"] = stress_result
         logger.info(f"Memory stress test: Peak {peak_memory:.1f}MB (+{peak_memory-initial_memory:.1f}MB)")
-        
+
         return stress_result
-        
+
     def run_report_generation_load_test(self):
         """Test report generation under load."""
         logger.info("Running report generation load test")
-        
+
         report_sizes = [100, 500, 1000, 2500, 5000]
         results = {}
-        
+
         for size in report_sizes:
             start_time = time.time()
-            
+
             # Generate mock findings
             findings = []
             for i in range(size):
@@ -978,48 +976,48 @@ registry-1.docker.io:443
                     "cvss_score": (i % 10) + 1,
                     "recommendation": f"Fix recommendation for finding {i}"
                 })
-                
+
             # Generate report
             report_content = self._generate_load_test_report(findings)
             generation_time = time.time() - start_time
-            
+
             results[f"{size}_findings"] = {
                 "findings_count": size,
                 "generation_time": generation_time,
                 "report_size_chars": len(report_content),
                 "findings_per_second": size / generation_time if generation_time > 0 else 0
             }
-            
+
             logger.info(f"Report with {size} findings: {generation_time:.2f}s ({len(report_content)} chars)")
-            
+
         self.results["performance_metrics"]["report_generation"] = results
         return results
-        
+
     def run_container_resource_test(self):
         """Test container resource limits simulation."""
         logger.info("Running container resource simulation test")
-        
+
         # Simulate different container resource scenarios
         scenarios = [
             {"memory_limit": "512m", "cpu_limit": "0.5"},
             {"memory_limit": "1g", "cpu_limit": "1.0"},
             {"memory_limit": "2g", "cpu_limit": "2.0"}
         ]
-        
+
         results = {}
-        
+
         for scenario in scenarios:
             scenario_name = f"mem_{scenario['memory_limit']}_cpu_{scenario['cpu_limit']}"
             start_time = time.time()
-            
+
             # Simulate resource-constrained scanning
             scan_results = []
             for lang, project_info in self.test_projects.items():
                 result = self._simulate_constrained_scan(project_info, scenario)
                 scan_results.append(result)
-                
+
             total_time = time.time() - start_time
-            
+
             results[scenario_name] = {
                 "memory_limit": scenario["memory_limit"],
                 "cpu_limit": scenario["cpu_limit"],
@@ -1028,25 +1026,25 @@ registry-1.docker.io:443
                 "average_scan_time": total_time / len(scan_results),
                 "successful_scans": len([r for r in scan_results if r["status"] == "success"])
             }
-            
+
         self.results["performance_metrics"]["container_resources"] = results
         logger.info("Container resource simulation completed")
-        
+
         return results
-        
-    def _simulate_scan(self, project_info: Dict[str, Any], scan_id: str) -> Dict[str, Any]:
+
+    def _simulate_scan(self, project_info: dict[str, Any], scan_id: str) -> dict[str, Any]:
         """Simulate a security scan."""
-        
+
         # Simulate scan time based on project complexity
         expected_issues = project_info.get("expected_issues", 1)
         base_scan_time = 0.5 + (expected_issues * 0.1)
-        
+
         # Add some randomness to simulate real-world variance
         import random
         actual_scan_time = base_scan_time + random.uniform(-0.2, 0.5)
-        
+
         time.sleep(max(0.1, actual_scan_time))  # Minimum 0.1s
-        
+
         return {
             "scan_id": scan_id,
             "project_language": project_info["language"],
@@ -1056,24 +1054,24 @@ registry-1.docker.io:443
             "status": "success",
             "timestamp": time.time()
         }
-        
-    def _simulate_constrained_scan(self, project_info: Dict[str, Any], constraints: Dict[str, str]) -> Dict[str, Any]:
+
+    def _simulate_constrained_scan(self, project_info: dict[str, Any], constraints: dict[str, str]) -> dict[str, Any]:
         """Simulate scan under resource constraints."""
-        
+
         # Simulate the effect of resource constraints
         memory_factor = 1.0
         if constraints["memory_limit"] == "512m":
             memory_factor = 1.5  # Slower due to memory pressure
         elif constraints["memory_limit"] == "1g":
             memory_factor = 1.2
-            
+
         cpu_factor = float(constraints["cpu_limit"])
-        
+
         base_time = 0.5 + (project_info.get("expected_issues", 1) * 0.1)
         adjusted_time = base_time * memory_factor / max(cpu_factor, 0.5)
-        
+
         time.sleep(min(adjusted_time, 5.0))  # Cap at 5 seconds
-        
+
         return {
             "language": project_info["language"],
             "constraints": constraints,
@@ -1081,8 +1079,8 @@ registry-1.docker.io:443
             "status": "success",
             "memory_pressure": memory_factor > 1.2
         }
-        
-    def _create_large_scan_result(self, num_findings: int) -> Dict[str, Any]:
+
+    def _create_large_scan_result(self, num_findings: int) -> dict[str, Any]:
         """Create large mock scan result for memory testing."""
         return {
             "scan_id": f"memory_test_{num_findings}",
@@ -1100,7 +1098,7 @@ registry-1.docker.io:443
                     "owasp_category": f"A{(i % 10) + 1}",
                     "metadata": {
                         "confidence": "high",
-                        "impact": "medium", 
+                        "impact": "medium",
                         "effort": "low",
                         "tags": [f"tag{j}" for j in range(i % 5)],
                         "references": [f"https://example.com/ref{j}" for j in range(i % 3)]
@@ -1119,16 +1117,16 @@ registry-1.docker.io:443
                 "scan_duration": num_findings * 0.001
             }
         }
-        
-    def _generate_load_test_report(self, findings: List[Dict[str, Any]]) -> str:
+
+    def _generate_load_test_report(self, findings: list[dict[str, Any]]) -> str:
         """Generate comprehensive test report."""
-        
+
         # Count findings by severity
         severity_counts = {}
         for finding in findings:
             severity = finding["severity"]
             severity_counts[severity] = severity_counts.get(severity, 0) + 1
-            
+
         report = f"""# Security Scan Load Test Report
 
 ## Executive Summary
@@ -1148,10 +1146,10 @@ This report contains the results of a comprehensive security scan performed as p
 ## Critical Findings
 
 """
-        
+
         # Include detailed information for critical and high findings
         critical_findings = [f for f in findings if f["severity"] in ["critical", "high"]]
-        
+
         for i, finding in enumerate(critical_findings[:20]):  # First 20 critical/high
             report += f"""### {finding['id']} - {finding['severity'].upper()}
 
@@ -1169,17 +1167,17 @@ This report contains the results of a comprehensive security scan performed as p
 ---
 
 """
-        
+
         if len(critical_findings) > 20:
             report += f"\n*... and {len(critical_findings) - 20} more critical/high findings*\n\n"
-            
+
         # Add summary tables
         report += """## Finding Distribution by File
 
 | File | Critical | High | Medium | Low | Total |
 |------|----------|------|--------|-----|-------|
 """
-        
+
         # Group by file for summary
         file_stats = {}
         for finding in findings:
@@ -1187,14 +1185,14 @@ This report contains the results of a comprehensive security scan performed as p
             if file_name not in file_stats:
                 file_stats[file_name] = {"critical": 0, "high": 0, "medium": 0, "low": 0}
             file_stats[file_name][finding["severity"]] += 1
-            
+
         for file_name, stats in sorted(file_stats.items())[:50]:  # First 50 files
             total = sum(stats.values())
             report += f"| {file_name} | {stats['critical']} | {stats['high']} | {stats['medium']} | {stats['low']} | {total} |\n"
-            
+
         if len(file_stats) > 50:
             report += f"\n*... and {len(file_stats) - 50} more files*\n"
-            
+
         report += f"""
 
 ## Recommendations
@@ -1212,50 +1210,50 @@ This report contains the results of a comprehensive security scan performed as p
 - Load test identifier: geotoolkit-load-test-{int(time.time())}
 
 """
-        
+
         return report
-        
+
     def run_full_load_test_suite(self):
         """Run the complete load testing suite."""
         logger.info("Starting comprehensive load testing suite")
-        
+
         start_time = time.time()
-        
+
         try:
             # 1. Concurrent scanning test
             self.run_concurrent_scan_test(10)
-            
+
             # 2. Memory stress test
             self.run_memory_stress_test()
-            
-            # 3. Report generation load test  
+
+            # 3. Report generation load test
             self.run_report_generation_load_test()
-            
+
             # 4. Container resource simulation
             self.run_container_resource_test()
-            
+
             # 5. Higher concurrency test
             self.run_concurrent_scan_test(20)
-            
+
         except Exception as e:
             logger.error(f"Load test suite failed: {e}")
             self.results["errors"].append(str(e))
-            
+
         total_time = time.time() - start_time
-        
+
         # Generate summary
         self.results["summary"] = {
             "total_test_time": total_time,
             "tests_completed": len(self.results["load_tests"]),
             "performance_tests": len(self.results["performance_metrics"]),
             "total_errors": len(self.results["errors"]),
-            "test_timestamp": time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())
+            "test_timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
         }
-        
+
         logger.info(f"Load testing suite completed in {total_time:.2f}s")
-        
+
         return self.results
-        
+
     def cleanup(self):
         """Clean up test environment."""
         if self.temp_dir and os.path.exists(self.temp_dir):
@@ -1279,13 +1277,13 @@ def main():
         help="Run memory stress testing"
     )
     parser.add_argument(
-        "--report-test", 
+        "--report-test",
         action="store_true",
         help="Run report generation load testing"
     )
     parser.add_argument(
         "--full-suite",
-        action="store_true", 
+        action="store_true",
         help="Run complete load testing suite"
     )
     parser.add_argument(
@@ -1293,16 +1291,16 @@ def main():
         default="load_test_results.json",
         help="Output file for test results"
     )
-    
+
     args = parser.parse_args()
-    
+
     # Initialize load test runner
     runner = LoadTestRunner()
-    
+
     try:
         # Setup test environment
         runner.setup_test_environment()
-        
+
         if args.full_suite:
             results = runner.run_full_load_test_suite()
         else:
@@ -1313,31 +1311,31 @@ def main():
                 runner.run_memory_stress_test()
             if args.report_test:
                 runner.run_report_generation_load_test()
-                
+
             results = runner.results
-            
+
         # Save results
-        with open(args.output, 'w') as f:
+        with open(args.output, "w") as f:
             json.dump(results, f, indent=2)
-            
+
         # Print summary
-        print(f"\nLoad Testing Summary:")
+        print("\nLoad Testing Summary:")
         print(f"Total Tests: {len(results['load_tests'])}")
         print(f"Performance Metrics: {len(results['performance_metrics'])}")
         print(f"Errors: {len(results['errors'])}")
         print(f"Results saved to: {args.output}")
-        
+
         if results.get("summary"):
             print(f"Total Time: {results['summary']['total_test_time']:.2f}s")
-            
+
     except Exception as e:
         logger.error(f"Load testing failed: {e}")
         return 1
-        
+
     finally:
         # Cleanup
         runner.cleanup()
-        
+
     return 0
 
 

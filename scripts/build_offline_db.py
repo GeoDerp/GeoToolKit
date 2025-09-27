@@ -27,7 +27,6 @@ from collections.abc import Iterable
 from pathlib import Path
 from urllib import request
 
-
 NVD_BASE = "https://nvd.nist.gov/feeds/json/cve/1.1"
 
 
