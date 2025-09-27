@@ -1,0 +1,30 @@
+{
+  "projects": [
+    {
+      "url": "https://github.com/fastapi/fastapi",
+      "name": "fastapi-quick-test",
+      "language": "Python",
+      "description": "Modern Python web framework for quick validation",
+      "container_capable": false,
+      "dockerfile_present": false,
+      "package_managers": ["pip", "poetry"]
+    },
+    {
+      "url": "https://github.com/gin-gonic/gin",
+      "name": "gin-quick-test", 
+      "language": "Go",
+      "description": "Lightweight Go HTTP web framework for quick validation",
+      "container_capable": false,
+      "dockerfile_present": false,
+      "package_managers": ["go.mod"]
+    }
+  ],
+  "metadata": {
+    "created_date": "2025-01-27",
+    "total_projects": 2,
+    "languages_covered": 2,
+    "container_capable_count": 0,
+    "validation_plan": "quick-validation-minimal",
+    "description": "Minimal project set for rapid GeoToolKit functionality validation"
+  }
+}

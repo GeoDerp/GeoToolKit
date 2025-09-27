@@ -1,0 +1,58 @@
+{
+  "projects": [
+    {
+      "url": "https://github.com/fastapi/fastapi",
+      "name": "fastapi-enhanced",
+      "language": "Python",
+      "description": "FastAPI with enhanced DAST configuration",
+      "container_capable": true,
+      "dockerfile_present": true,
+      "package_managers": ["pip", "poetry", "uv"],
+      "network_config": {
+        "ports": ["8000", "8080"],
+        "protocol": "http",
+        "health_endpoint": "/docs",
+        "startup_time_seconds": 20,
+        "allowed_egress": {
+          "localhost": ["8000", "8080"],
+          "127.0.0.1": ["8000", "8080"],
+          "external_hosts": []
+        }
+      },
+      "network_allow_hosts": ["localhost:8000", "127.0.0.1:8000"],
+      "network_allow_ip_ranges": ["127.0.0.1/32"],
+      "ports": ["8000"]
+    },
+    {
+      "url": "https://github.com/gin-gonic/gin", 
+      "name": "gin-enhanced",
+      "language": "Go",
+      "description": "Gin with enhanced container security testing",
+      "container_capable": true,
+      "dockerfile_present": true,
+      "package_managers": ["go.mod"],
+      "network_config": {
+        "ports": ["8080", "3000"],
+        "protocol": "http",
+        "health_endpoint": "/ping",
+        "startup_time_seconds": 15,
+        "allowed_egress": {
+          "localhost": ["8080", "3000"],
+          "external_hosts": []
+        }
+      },
+      "network_allow_hosts": ["localhost:8080", "localhost:3000"],
+      "network_allow_ip_ranges": [],
+      "ports": ["8080", "3000"]
+    }
+  ],
+  "metadata": {
+    "created_date": "2025-01-27",
+    "total_projects": 2,
+    "languages_covered": 2,
+    "container_capable_count": 2,
+    "validation_plan": "enhanced-security-validation",
+    "description": "Enhanced project configuration for comprehensive security testing including DAST",
+    "enriched": true
+  }
+}
