@@ -43,7 +43,7 @@ def verify_cli_package():
         try:
             # Dynamically find the .dist-info directory
             dist_info_dir = next(
-                (name for name in zf.namelist() if name.endswith(".dist-info/entry_points.txt") and name.count('/') == 1),
+                (name for name in zf.namelist() if name.endswith(".dist-info/entry_points.txt")),
                 None
             )
             if not dist_info_dir:
