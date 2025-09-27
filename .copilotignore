@@ -56,7 +56,6 @@ ehthumbs.db
 Thumbs.db
 
 # IDE and editor files
-.vscode/settings.json
 .idea/
 *.swp
 *.swo
