@@ -221,7 +221,7 @@ runs:
         echo "Running Semgrep security scan..."
         # Check if semgrep is available and run scan
         if command -v semgrep >/dev/null 2>&1; then
-          timeout 5m semgrep scan --sarif -o ${{ github.workspace }}/semgrep-output.sarif --oss-only ${{ inputs.source_dir }} || echo "Semgrep scan timed out or failed"
+          timeout 5m semgrep scan --config rules/semgrep/default.semgrep.yml --sarif -o ${{ github.workspace }}/semgrep-output.sarif --oss-only ${{ inputs.source_dir }} || echo "Semgrep scan timed out or failed"
         else
           echo "Semgrep not available, creating empty SARIF"
           echo '{"version":"2.1.0","$schema":"https://json.schemastore.org/sarif-2.1.0.json","runs":[{"tool":{"driver":{"name":"semgrep"}},"results":[]}]}' > ${{ github.workspace }}/semgrep-output.sarif
@@ -257,7 +257,7 @@ runs:
         echo "Running Semgrep issue detection scan..."
         # Check if semgrep is available and run scan
         if command -v semgrep >/dev/null 2>&1; then
-          timeout 5m semgrep scan --severity ERROR --severity WARNING --oss-only --json --output=${{ github.workspace }}/semgrep.json ${{ inputs.source_dir }} || echo "Semgrep issue scan timed out or failed"
+          timeout 5m semgrep scan --config rules/semgrep/default.semgrep.yml --severity ERROR --severity WARNING --oss-only --json --output=${{ github.workspace }}/semgrep.json ${{ inputs.source_dir }} || echo "Semgrep issue scan timed out or failed"
         else
           echo "Semgrep not available, creating empty results"
           echo '{"results":[],"paths":{"_comment":"scan completed but no tool available"}}' > ${{ github.workspace }}/semgrep.json
@@ -288,14 +288,23 @@ runs:
 
     - name: Format test image tag for caching
       run: |
-        echo "formatted_branch_name=$(echo ${{ steps.branch-names.outputs.current_branch }} | sed 's/\//-/g')" >> $GITHUB_ENV
+        # Replace slashes with dashes and lowercase for docker tag safety
+        formatted=$(echo "${{ steps.branch-names.outputs.current_branch }}" | sed 's/\//-/g' | tr '[:upper:]' '[:lower:]')
+        echo "formatted_branch_name=${formatted}" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Lowercase docker image name for registry
+      run: |
+        # Lowercase the provided docker image name to satisfy registry tag rules
+        img=$(echo "${{ inputs.docker_image_name }}" | tr '[:upper:]' '[:lower:]')
+        echo "docker_image_name_lower=${img}" >> $GITHUB_ENV
       shell: bash
 
     - name: Build Docker image for testing (with timeout)
       uses: docker/build-push-action@v6
       with:
         load: true
-        tags: ${{ inputs.docker_image_name }}:${{ env.formatted_branch_name }}
+        tags: '${{ env.docker_image_name_lower }}:${{ env.formatted_branch_name }}'
         cache-from: type=gha
         cache-to: type=gha,mode=max
         platforms: linux/amd64  # Single platform for faster builds
@@ -304,7 +313,7 @@ runs:
       continue-on-error: true
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: ${{ inputs.docker_image_name }}:${{ env.formatted_branch_name }}
+        image-ref: '${{ env.docker_image_name_lower }}:${{ env.formatted_branch_name }}'
         format: sarif
         output: trivy.sarif
         ignore-unfixed: true
@@ -340,7 +349,7 @@ runs:
       continue-on-error: true
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: ${{ inputs.docker_image_name }}:${{ env.formatted_branch_name }}
+        image-ref: '${{ env.docker_image_name_lower }}:${{ env.formatted_branch_name }}'
         format: template
         template: "@.github/actions/ci/trivy.tpl"
         output: trivy-high-critical.html
@@ -400,7 +409,7 @@ runs:
         fi
 
         # set image name
-        echo "image_name=$(echo ghcr.io/${{ github.repository_owner }}/${{ inputs.docker_image_name }})" >> $GITHUB_ENV
+        echo "image_name=$(echo ghcr.io/${{ github.repository_owner }}/${{ env.docker_image_name_lower }})" >> $GITHUB_ENV
       shell: bash
 
     - name: Extract metadata (tags, labels) for Docker
