@@ -81,7 +81,8 @@ runs:
         timeout 5m uv sync --dev --no-build-isolation || {
           echo "uv sync failed or timed out, falling back to basic installation"
           pip install -e .
-          pip install pytest pytest-cov ruff mypy
+          # Ensure common test/dev tools are available in fallback path
+          pip install pytest pytest-cov ruff mypy pytest-timeout
         }
         # Try to install MCP extras if available, continue if it fails
         uv sync --extra mcp --no-build-isolation 2>/dev/null || echo "⚠️ MCP extras not available, skipping"
