@@ -75,7 +75,6 @@ runs:
           uv-${{ runner.os }}-py${{ steps.setup_python.outputs.python-version }}-
 
     - name: Install uv dependencies with timeout
-      timeout-minutes: 10  # Prevent hanging on dependency resolution
       run: |
         echo "Installing dependencies with system Python..."
         # Install core dependencies first with timeout
@@ -103,7 +102,6 @@ runs:
         src: "./${{ inputs.source_dir }}"
 
     - name: Install additional packages
-      timeout-minutes: 5  # Prevent hanging on tool installation
       run: |
         if [ -n "${{ inputs.uv_packages }}" ]; then
           timeout 2m uv add --dev ${{ inputs.uv_packages }} || echo "Failed to install additional packages"
@@ -125,7 +123,6 @@ runs:
         echo "pytest_fail_percent_options=$(echo '--cov-fail-under=${{ inputs.pytest_coverage_threshold_percent }}')" >> $GITHUB_ENV
 
     - name: Test with PyTest-cov (with timeout)
-      timeout-minutes: 15  # Prevent test hangs
       shell: bash
       run: |
         echo "Running tests with coverage..."
@@ -135,7 +132,6 @@ runs:
         }
 
     - name: Test MCP Server (with timeout)
-      timeout-minutes: 5
       shell: bash
       run: |
         echo "Testing MCP server functionality..."
@@ -162,7 +158,6 @@ runs:
         " || echo "MCP server test skipped"
 
     - name: Test Core Scanner Integration (with timeout)
-      timeout-minutes: 5
       shell: bash
       run: |
         echo "Testing core GeoToolKit scanner functionality..."
@@ -180,7 +175,6 @@ runs:
         " || echo "Core scanner test skipped"
 
     - name: Type Check with Mypy (with timeout)
-      timeout-minutes: 10  # Prevent mypy from hanging
       shell: bash
       run: |
         # Try to run mypy, with fallback options
@@ -203,7 +197,6 @@ runs:
 
     # Install and run Semgrep scan
     - name: Install Semgrep (with timeout)
-      timeout-minutes: 5
       continue-on-error: true
       run: |
         # Try to install semgrep, continue if it fails
@@ -217,7 +210,6 @@ runs:
         fi
       shell: bash
     - name: Run Semgrep scan and output to Github Security (with timeout)
-      timeout-minutes: 10
       continue-on-error: true
       run: |
         echo "Running Semgrep security scan..."
@@ -254,7 +246,6 @@ runs:
         category: semgrep
         
     - name: Run Semgrep scan and fail on issues (with timeout)
-      timeout-minutes: 10  
       continue-on-error: true
       run: |
         echo "Running Semgrep issue detection scan..."
@@ -295,7 +286,6 @@ runs:
       shell: bash
 
     - name: Build Docker image for testing (with timeout)
-      timeout-minutes: 15  # Prevent Docker build hangs
       uses: docker/build-push-action@v6
       with:
         load: true
@@ -305,7 +295,6 @@ runs:
         platforms: linux/amd64  # Single platform for faster builds
 
     - name: Run Trivy vulnerability scanner sarif (with timeout)
-      timeout-minutes: 10
       continue-on-error: true
       uses: aquasecurity/trivy-action@master
       with:
@@ -342,7 +331,6 @@ runs:
         category: Trivy
 
     - name: Run Trivy vulnerability scanner (with timeout)
-      timeout-minutes: 10
       continue-on-error: true
       uses: aquasecurity/trivy-action@master
       with:
