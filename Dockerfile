@@ -44,6 +44,7 @@ FROM base AS test
 WORKDIR ${APP}
 COPY . . 
 RUN chown -R ${USER_NAME}:${USER_NAME} ${APP} && \
+    mkdir -p ${HOME}/.cache ${HOME}/.local && chown -R ${USER_NAME}:${USER_NAME} ${HOME}/.cache ${HOME}/.local || true && \
     uv venv && \
     source .venv/bin/activate && \
     uv pip install .[test]
@@ -65,6 +66,10 @@ COPY . .
 # Check App permissions
 RUN chown -R ${USER_NAME}:${USER_NAME} ${APP} && \
     chmod -R 0750 ${APP}
+
+# Ensure user home cache and local directories are owned by the application user
+RUN mkdir -p ${HOME}/.cache ${HOME}/.cache/uv ${HOME}/.local && \
+    chown -R ${USER_NAME}:${USER_NAME} ${HOME}/.cache ${HOME}/.local || true
 
 # Run App as User
 USER ${USER_NAME}
