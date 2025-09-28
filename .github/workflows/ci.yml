@@ -79,7 +79,6 @@ jobs:
           pytest_coverage_xml_file_name: ${{ env.PYTEST_COVERAGE_XML_FILE_NAME }}
           source_dir: ${{ env.PYTHON_APP_SOURCE_DIR }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          docker_image_name: ${{ github.event.repository.name }}
           pytest_coverage_threshold_percent: ${{ env.PYTEST_COVERAGE_THRESHOLD_PERCENT }}
 
   # Deploy packages for CLI and MCP server
@@ -206,17 +205,14 @@ jobs:
           
           #### MCP Server Package  
           - **MCP Server Archive**: \`geotoolkit-mcp-server-*.tar.gz\` - Model Context Protocol server
-          - **Entry Point**: \`mcp/server.py\`
+          - **Entry Point**: \`mcp/mcp_server.py\`
           - **Tools**: createProjects, runScan, normalizeProjects
-          
-          #### Container Image
-          - **Docker Image**: \`ghcr.io/${GITHUB_REPOSITORY_OWNER}/geotoolkit:latest\`
           
           ### 🔒 Security Features
           - ✅ All packages scanned with Semgrep and Trivy
           - ✅ Vulnerability database validation
           - ✅ Dependencies security checked
-          - ✅ Container image security scanning
+          - ✅ Python dependency security scanning
           
           ### 🚀 Installation & Usage
           
@@ -237,16 +233,13 @@ jobs:
           # Extract MCP server
           tar -xzf geotoolkit-mcp-server-*.tar.gz
           
-          # Run MCP server
+          # Run MCP server directly
           cd mcp-server
-          python server.py
-          \`\`\`
+          python mcp_server.py
           
-          #### Docker Deployment
-          \`\`\`bash
-          # Pull and run container
-          docker pull ghcr.io/${GITHUB_REPOSITORY_OWNER}/geotoolkit:latest
-          docker run -v \$(pwd):/workspace ghcr.io/${GITHUB_REPOSITORY_OWNER}/geotoolkit:latest
+          # Or from the installed package source
+          uv pip install ./geotoolkit-*.whl
+          python -c "import sys; sys.path.insert(0, '.'); import mcp.mcp_server; mcp.mcp_server.main()"
           \`\`\`
           
           ### 📝 Build Information

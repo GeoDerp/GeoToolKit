@@ -147,7 +147,7 @@ class ValidationExecutor:
                     cmd,
                     stdout=f,
                     stderr=subprocess.STDOUT,
-                    timeout=600,  # 10 minutes
+                    timeout=1800,  # 30 minutes
                     text=True,
                 )
 

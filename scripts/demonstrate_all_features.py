@@ -161,7 +161,7 @@ def demonstrate_geotoolkit_features():
     print("\n🔌 8. Model Context Protocol (MCP) Server")
     print("-" * 30)
 
-    if Path("mcp/server.py").exists():
+    if Path("mcp/mcp_server.py").exists():
         print("✅ FastMCP Server: Programmatic project management")
         print("✅ MCP Tools Available:")
         print("   - createProjects() - Generate projects.json with networking")

@@ -53,6 +53,43 @@ GeoToolKit is a comprehensive, offline software assurance toolkit designed to sc
 
 ### Installation
 
+#### Quick Installation (for users)
+
+If you just want to use GeoToolKit without development setup:
+
+```bash
+# Install from PyPI (when published)
+pip install geotoolkit
+
+# Or install from GitHub releases
+pip install https://github.com/GeoDerp/GeoToolKit/releases/latest/download/geotoolkit-*.whl
+
+# Run the CLI
+geotoolkit --input projects.json --output report.md --database-path data/offline-db.tar.gz
+```
+#### Run the MCP server (optional)
+
+You can start the Model Context Protocol (MCP) server to manage `projects.json` and trigger scans programmatically.
+
+From an installed environment (preferred):
+```bash
+# Start built-in MCP server (default host 127.0.0.1, default port 9000)
+# --mcp-server enables MCP mode; --mcp-host/--mcp-port override listen address.
+geotoolkit --mcp-server --mcp-host 127.0.0.1 --mcp-port 9000 --database-path data/offline-db.tar.gz
+```
+
+Quick API example:
+```bash
+# Trigger a scan by POSTing a projects.json (server returns report text)
+curl -s -X POST "http://127.0.0.1:9000/runScan" \
+  -H "Content-Type: application/json" \
+  --data-binary @projects.json > security-report.md
+```
+
+#### Development Installation
+
+For development:
+
 1. **Clone the repository**:
    ```bash
    git clone https://github.com/GeoDerp/GeoToolKit.git
@@ -65,6 +102,9 @@ GeoToolKit is a comprehensive, offline software assurance toolkit designed to sc
    uv venv
    source .venv/bin/activate
    uv sync
+   
+   # For MCP server support
+   uv sync --extra mcp
    
    <!-- # Or using pip
    python -m venv .venv
@@ -108,35 +148,25 @@ GeoToolKit is a comprehensive, offline software assurance toolkit designed to sc
 
 ### Model Context Protocol (MCP) Server
 
-An optional FastMCP server is provided to programmatically manage `projects.json` and run scans. It can interpret `network_config` blocks into explicit allowlists for DAST. See the full guide in `mcp/README.md`.
+An optional FastMCP server is provided to programmatically manage `projects.json` and run scans. It can interpret `network_config` blocks into explicit allowlists for DAST. See the full guide in `mcp_server/README.md`.
 
+The recommended way to run the server is via the main CLI:
 ```bash
-# Start MCP server (requires fastmcp)
-uv run python mcp/server.py
-
-# Or invoke tools directly from Python
-uv run python -c "import mcp.server as s; print(s.createProjects([{ 'url': 'https://github.com/fastapi/fastapi', 'name': 'fastapi', 'network_config': { 'ports': ['8000'], 'protocol': 'http', 'allowed_egress': { 'localhost': ['8000'] } } }]))"
+# Start built-in MCP server (requires mcp dependencies)
+# The --mcp-server flag enables MCP mode.
+geotoolkit --mcp-server --mcp-host 127.0.0.1 --mcp-port 9000 --database-path data/offline-db.tar.gz
 ```
 
-#### Running with Docker
+For development, you can also run the server script directly:
+```bash
+# Start MCP server directly (requires fastmcp)
+uv run python mcp_server/mcp_server.py
+```
 
-You can also run the MCP server as a container for a more isolated setup.
-
-1.  **Build the Docker image**:
-    ```bash
-    podman build -t geotoolkit-mcp .
-    ```
-
-2.  **Run the container**:
-    ```bash
-    podman run -d -p 8080:8080 --name geotoolkit-mcp-server geotoolkit-mcp
-    ```
-    This will start the MCP server and expose it on port 8080.
-    
 Tools:
-- `createProjects(projects, outputPath?)` → writes projects.json and normalizes any `network_config` into `network_allow_hosts`, `network_allow_ip_ranges`, and `ports`
-- `normalizeProjects(inputPath?, outputPath?)` → reads an existing projects.json and derives explicit allowlists from `network_config`
-- `runScan(inputPath?, outputPath?, databasePath?)` → runs the scan and returns report text
+- `createProjects(projects, outputPath?)` → writes `projects.json` and normalizes any `network_config` into `network_allow_hosts`, `network_allow_ip_ranges`, and `ports`.
+- `normalizeProjects(inputPath?, outputPath?)` → reads an existing `projects.json` and derives explicit allowlists from `network_config`.
+- `runScan(inputPath?, outputPath?, databasePath?)` → runs the scan and returns the report text as a string.
 
 Quick note on `network_config` interpretation:
 - `allowed_egress.external_hosts` are turned into `host:port` using `network_config.ports` or protocol defaults (80/443)
@@ -343,17 +373,6 @@ The generated reports include:
 - **Compliance Mapping** - NIST, OWASP Top 10, ISM alignment
 - **Recommendations** - Actionable remediation steps
 
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these guidelines:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add or update tests
-5. Ensure all tests pass
-6. Submit a pull request
-
 ### Development Setup
 
 ```bash
@@ -376,7 +395,6 @@ Current version: **v0.1.0** (Beta)
 ## 📞 Support
 
 - **Issues**: [GitHub Issues](https://github.com/GeoDerp/GeoToolKit/issues)
-- **Documentation**: [Project Wiki](https://github.com/GeoDerp/GeoToolKit/wiki)
 - **Security Issues**: Please report privately via email
 
 ---

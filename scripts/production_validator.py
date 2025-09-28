@@ -343,32 +343,11 @@ class ProductionValidator:
             except json.JSONDecodeError:
                 issues.append(f"Invalid JSON in seccomp profile: {profile}")
 
-        # Check Dockerfile security
-        dockerfile_path = self.project_root / "Dockerfile"
-        if dockerfile_path.exists():
-            dockerfile_content = dockerfile_path.read_text()
-
-            # Check for non-root user
-            if (
-                "USER ${USER_NAME}" not in dockerfile_content
-                and "USER " not in dockerfile_content
-            ):
-                issues.append("Dockerfile security: Should run as non-root user")
-
-            # Check for proper file ownership (either COPY --chown or explicit chown)
-            has_ownership = any(
-                [
-                    "COPY --chown=" in dockerfile_content,
-                    "chown -R" in dockerfile_content,
-                    "chown " in dockerfile_content,
-                ]
-            )
-            if not has_ownership:
-                issues.append("Dockerfile security: Should set proper file ownership")
-
-            # Check for exposed ports declaration
-            if "EXPOSE" not in dockerfile_content:
-                issues.append("Dockerfile security: Should declare exposed ports")
+        # Note: Dockerfile has been removed - the project now focuses on Python package distribution
+        # Container security is now handled at runtime by Podman when running individual security tools
+        logger.info(
+            "Docker container building disabled - using Python package distribution model"
+        )
 
         # Check for hardcoded secrets in config files
         config_files = ["src/main.py", "projects.json", "pyproject.toml"]
@@ -390,7 +369,7 @@ class ProductionValidator:
             "status": "passed" if not issues else "failed",
             "issues": issues,
             "checks_performed": len(required_profiles)
-            + 3,  # profiles + dockerfile + secrets
+            + 1,  # profiles + secrets (removed dockerfile check)
             "issues_count": len(issues),
         }
 

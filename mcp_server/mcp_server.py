@@ -16,29 +16,28 @@ from typing import Any
 
 # Optional MCP dependencies - graceful degradation if not available
 try:
-    from fastmcp import FastMCP, tool  # type: ignore
+    from fastmcp import FastMCP
 
     MCP_AVAILABLE = True
 except ImportError:  # pragma: no cover
     # Create fallback classes for when MCP dependencies are not available
-    class FastMCP:  # type: ignore
+    class FastMCP:
         def __init__(self, **kwargs: Any):
             pass
 
-        def run(self) -> None:
+        def run(self, **kwargs: Any) -> None:
             print("⚠️ MCP dependencies not available. Install with: uv sync --extra mcp")
-
-    def tool():  # type: ignore
-        def decorator(func: Any) -> Any:
-            return func
-
-        return decorator
 
     MCP_AVAILABLE = False
 
 APP_ROOT = Path(__file__).resolve().parents[1]
 
-mcp = FastMCP(app_id="geotoolkit.mcp", app_name="GeoToolKit MCP", version="0.1.0")
+if MCP_AVAILABLE:
+    # Initialize the MCP server
+    mcp = FastMCP(name="geotoolkit-security-scanner", version="1.0.0")
+else:
+    # Create a fallback instance
+    mcp = FastMCP()
 
 
 def _write_json(path: Path, data: dict[str, Any]) -> None:
@@ -94,7 +93,7 @@ def _derive_allowlists(p: dict[str, Any]) -> tuple[list[str], list[str], list[st
     return sorted(allow_hosts), sorted(allow_cidrs), [str(x) for x in ports]
 
 
-@tool()
+@mcp.tool
 def createProjects(
     projects: list[dict[str, Any]], outputPath: str = "projects.json"
 ) -> dict:
@@ -132,7 +131,7 @@ def createProjects(
     }
 
 
-@tool()
+@mcp.tool
 def runScan(
     inputPath: str = "projects.json",
     outputPath: str = "security-report.md",
@@ -187,7 +186,7 @@ def runScan(
     return {"exitCode": rc, "report": report_text, "log": out}
 
 
-@tool()
+@mcp.tool
 def normalizeProjects(
     inputPath: str = "projects.json", outputPath: str | None = None
 ) -> dict:
@@ -233,11 +232,23 @@ def normalizeProjects(
     return {"ok": True, "path": str(out_abs), "preview": preview}
 
 
-if __name__ == "__main__":  # pragma: no cover
-    # Start MCP server
-    mcp.run()
-
-
 def main() -> None:
     """Main entry point for MCP server CLI."""
-    mcp.run()
+    import os
+
+    # Get host and port from environment variables (set by main CLI)
+    host = os.environ.get("MCP_HOST", "127.0.0.1")
+    port = int(os.environ.get("MCP_PORT", "9000"))
+    database_path = os.environ.get("DATABASE_PATH", "")
+
+    if MCP_AVAILABLE:
+        print(f"Starting MCP server on {host}:{port}")
+        if database_path:
+            print(f"Database path: {database_path}")
+        mcp.run(transport="http", host=host, port=port)
+    else:
+        print("⚠️ MCP dependencies not available. Install with: uv sync --extra mcp")
+
+
+if __name__ == "__main__":  # pragma: no cover
+    main()
