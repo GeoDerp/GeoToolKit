@@ -1121,6 +1121,7 @@ def production_test_suite():
 class TestProductionReadiness:
     """Production readiness test cases."""
 
+    @pytest.mark.timeout(300)  # 5 minute timeout for multi-language scanning
     def test_multi_language_project_scanning(self, production_test_suite):
         """Test scanning projects in all supported languages."""
         logger.info("Testing multi-language project scanning...")
@@ -1191,6 +1192,7 @@ class TestProductionReadiness:
 
         production_test_suite.test_results["multi_language_scan"] = results
 
+    @pytest.mark.timeout(600)  # 10 minute timeout for load testing
     def test_load_testing_concurrent_scans(self, production_test_suite):
         """Test system under load with concurrent scans."""
         logger.info("Testing concurrent scan load handling...")
@@ -1240,6 +1242,7 @@ class TestProductionReadiness:
             "avg_scan_time": avg_scan_time,
         }
 
+    @pytest.mark.timeout(180)  # 3 minute timeout for container security testing
     def test_container_security_isolation(self, production_test_suite):
         """Test container security and isolation."""
         logger.info("Testing container security and isolation...")
@@ -1294,6 +1297,7 @@ class TestProductionReadiness:
 
         logger.info("✅ Container security validation completed")
 
+    @pytest.mark.timeout(120)  # 2 minute timeout for error handling tests
     def test_error_handling_edge_cases(self, production_test_suite):
         """Test error handling and edge cases."""
         logger.info("Testing error handling and edge cases...")
@@ -1354,6 +1358,7 @@ class TestProductionReadiness:
 
         production_test_suite.test_results["edge_cases"] = results
 
+    @pytest.mark.timeout(300)  # 5 minute timeout for report generation under load
     def test_report_generation_under_load(self, production_test_suite):
         """Test report generation under various load conditions."""
         logger.info("Testing report generation under load...")
@@ -1402,6 +1407,7 @@ class TestProductionReadiness:
 
         production_test_suite.test_results["report_generation"] = results
 
+    @pytest.mark.timeout(120)  # 2 minute timeout for network isolation testing
     def test_network_isolation_validation(self, production_test_suite):
         """Test network isolation and allowlist functionality."""
         logger.info("Testing network isolation and allowlist validation...")
@@ -1437,6 +1443,7 @@ class TestProductionReadiness:
             "allowed_requests": ni_results.get("allowed", []),
         }
 
+    @pytest.mark.timeout(180)  # 3 minute timeout for memory and resource testing
     def test_memory_and_resource_limits(self, production_test_suite):
         """Test memory usage and resource limits."""
         logger.info("Testing memory usage and resource limits...")
