@@ -71,6 +71,7 @@ test = [
     "mypy>=1.6.0",
     "pytest>=7.3.1",
     "pytest-cov>=4.1.0",
+    "pytest-timeout>=2.1.0",
     "requests>=2.32.3",
 ]
 mcp = [
@@ -129,6 +130,17 @@ src = ["src", "tests"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 filterwarnings = ["error"]
+# Add timeout to prevent hanging tests
+timeout = 300
+# Add timeout for individual tests
+timeout_method = "thread"
+# Allow skipping timeout for specific tests
+addopts = "--tb=short --strict-markers -v"
+markers = [
+    "slow: marks tests as slow (may take longer to run)",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests"
+]
 
 [tool.mypy]
 python_version = "3.11"

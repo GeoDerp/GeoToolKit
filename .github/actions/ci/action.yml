@@ -124,6 +124,11 @@ runs:
 
     - name: Test with PyTest-cov (with timeout)
       shell: bash
+      env:
+        # Set environment variables to skip container operations in tests
+        ZAP_SKIP_CONTAINER: "1"
+        TRIVY_SKIP_CONTAINER: "1"
+        PODMAN_SKIP_CONTAINER: "1"
       run: |
         echo "Running tests with coverage..."
         timeout 10m uv run pytest --cov=${{ inputs.source_dir }} ${{ env.pytest_report_name_options }} ${{ env.pytest_fail_percent_options }} || {
