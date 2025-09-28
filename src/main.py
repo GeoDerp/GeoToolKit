@@ -1,5 +1,7 @@
 import argparse
 import json
+import os
+import sys
 from typing import Any
 
 from src.models.project import Project
@@ -10,12 +12,32 @@ from src.reporting.report import ReportGenerator
 def main() -> None:
     """Main entry point for the Automated Malicious Code Scanner CLI."""
     parser = argparse.ArgumentParser(description="Automated Malicious Code Scanner")
+    
+    # MCP server arguments
     parser.add_argument(
-        "--input", required=True, help="Path to the projects.json file."
+        "--mcp-server", 
+        action="store_true", 
+        help="Start the MCP server instead of running a scan."
+    )
+    parser.add_argument(
+        "--mcp-host", 
+        default="127.0.0.1", 
+        help="Host for MCP server (default: 127.0.0.1)."
+    )
+    parser.add_argument(
+        "--mcp-port", 
+        default=9000, 
+        type=int, 
+        help="Port for MCP server (default: 9000)."
+    )
+    
+    # Standard scanning arguments
+    parser.add_argument(
+        "--input", 
+        help="Path to the projects.json file."
     )
     parser.add_argument(
         "--output",
-        required=True,
         help="Path for the generated report (e.g., report.md).",
     )
     parser.add_argument(
@@ -28,6 +50,38 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    # Handle MCP server mode
+    if args.mcp_server:
+        try:
+            # Add the project root to Python path so mcp_server module can be imported
+            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            sys.path.insert(0, project_root)
+            
+            from mcp_server.mcp_server import main as mcp_main
+            print(f"Starting MCP server on {args.mcp_host}:{args.mcp_port}")
+            print(f"Database path: {args.database_path}")
+            
+            # Set environment variables for the MCP server to use
+            os.environ['MCP_HOST'] = args.mcp_host
+            os.environ['MCP_PORT'] = str(args.mcp_port)
+            os.environ['DATABASE_PATH'] = args.database_path
+            
+            mcp_main()
+            return
+        except ImportError as e:
+            print(f"Error: MCP dependencies not available: {e}")
+            print("Install with: uv sync --extra mcp")
+            sys.exit(1)
+        except Exception as e:
+            print(f"Error starting MCP server: {e}")
+            sys.exit(1)
+
+    # Validate required arguments for scanning mode
+    if not args.input:
+        parser.error("--input is required when not in MCP server mode")
+    if not args.output:
+        parser.error("--output is required when not in MCP server mode")
 
     print(
         f"Starting GeoToolKit scan with input: {args.input}, output: {args.output}, database: {args.database_path}"

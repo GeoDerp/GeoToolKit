@@ -148,20 +148,25 @@ For development:
 
 ### Model Context Protocol (MCP) Server
 
-An optional FastMCP server is provided to programmatically manage `projects.json` and run scans. It can interpret `network_config` blocks into explicit allowlists for DAST. See the full guide in `mcp/README.md`.
+An optional FastMCP server is provided to programmatically manage `projects.json` and run scans. It can interpret `network_config` blocks into explicit allowlists for DAST. See the full guide in `mcp_server/README.md`.
 
+The recommended way to run the server is via the main CLI:
 ```bash
-# Start MCP server (requires fastmcp)
-uv run python mcp/mcp_server.py
+# Start built-in MCP server (requires mcp dependencies)
+# The --mcp-server flag enables MCP mode.
+geotoolkit --mcp-server --mcp-host 127.0.0.1 --mcp-port 9000 --database-path data/offline-db.tar.gz
+```
 
-# Or invoke tools directly from Python
-uv run python -c "import mcp.mcp_server as s; print(s.createProjects([{ 'url': 'https://github.com/fastapi/fastapi', 'name': 'fastapi', 'network_config': { 'ports': ['8000'], 'protocol': 'http', 'allowed_egress': { 'localhost': ['8000'] } } }]))"
+For development, you can also run the server script directly:
+```bash
+# Start MCP server directly (requires fastmcp)
+uv run python mcp_server/mcp_server.py
 ```
 
 Tools:
-- `createProjects(projects, outputPath?)` → writes projects.json and normalizes any `network_config` into `network_allow_hosts`, `network_allow_ip_ranges`, and `ports`
-- `normalizeProjects(inputPath?, outputPath?)` → reads an existing projects.json and derives explicit allowlists from `network_config`
-- `runScan(inputPath?, outputPath?, databasePath?)` → runs the scan and returns report text
+- `createProjects(projects, outputPath?)` → writes `projects.json` and normalizes any `network_config` into `network_allow_hosts`, `network_allow_ip_ranges`, and `ports`.
+- `normalizeProjects(inputPath?, outputPath?)` → reads an existing `projects.json` and derives explicit allowlists from `network_config`.
+- `runScan(inputPath?, outputPath?, databasePath?)` → runs the scan and returns the report text as a string.
 
 Quick note on `network_config` interpretation:
 - `allowed_egress.external_hosts` are turned into `host:port` using `network_config.ports` or protocol defaults (80/443)

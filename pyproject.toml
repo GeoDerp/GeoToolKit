@@ -24,6 +24,8 @@ dependencies = [
     "gitpython>=3.1.0",
     "pytest>=8.3.5",
     "psutil>=7.1.0",
+    "fastmcp>=2.12.3",
+    "mcp>=1.15.0",
 ]
 classifiers = [
     "Programming Language :: Python :: 3.11",
@@ -75,19 +77,19 @@ test = [
     "requests>=2.32.3",
 ]
 mcp = [
-    "fastmcp>=0.1.3",
+    "fastmcp>=2.12.3",
     "mcp>=1.15.0",
 ]
 
 [tool.hatch.build]
 artifact-name = "geotoolkit-{version}"
-packages = ["src", "mcp"]
+packages = ["src", "mcp_server"]
 
 [tool.hatch.build.targets.sdist]
 include = [
     "src/reporting/templates/report.md",
-    "mcp/manifest.json",
-    "mcp/README.md",
+    "mcp_server/manifest.json",
+    "mcp_server/README.md",
     "tests",
 ]
 
@@ -117,7 +119,7 @@ ignore = ["E501", "B008", "B905", "E722", "W291", "W293", "C401"]
 [tool.ruff.lint.per-file-ignores]
 "src/main.py" = ["C901"]
 "src/orchestration/*" = ["C901"]
-"mcp/mcp_server.py" = ["C901"]
+"mcp_server/mcp_server.py" = ["C901"]
 "tests/**/*" = ["F841", "B017"]
 # Be more lenient with scripts directory
 "scripts/**/*" = ["C901", "E722", "F841", "B007", "W291", "W293", "C401"]
@@ -130,16 +132,12 @@ src = ["src", "tests"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 filterwarnings = ["error"]
-# Add timeout to prevent hanging tests
-timeout = 300
-# Add timeout for individual tests
-timeout_method = "thread"
-# Allow skipping timeout for specific tests
 addopts = "--tb=short --strict-markers -v"
 markers = [
     "slow: marks tests as slow (may take longer to run)",
     "integration: marks tests as integration tests",
-    "unit: marks tests as unit tests"
+    "unit: marks tests as unit tests",
+    "timeout: marks tests with a timeout"
 ]
 
 [tool.mypy]
