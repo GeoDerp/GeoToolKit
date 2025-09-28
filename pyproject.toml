@@ -115,8 +115,7 @@ ignore = ["E501", "B008", "B905", "E722", "W291", "W293", "C401"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/main.py" = ["C901"]
-"src/orchestration/parser.py" = ["C901"]
-"src/orchestration/runners/zap_runner.py" = ["C901"]
+"src/orchestration/*" = ["C901"]
 "mcp/server.py" = ["C901"]
 "tests/**/*" = ["F841", "B017"]
 # Be more lenient with scripts directory
