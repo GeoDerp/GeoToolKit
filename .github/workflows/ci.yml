@@ -97,6 +97,16 @@ jobs:
         with:
           python-version-file: ".python-version"
       
+      - name: Cache UV dependencies for deployment
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: uv-deploy-${{ runner.os }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+          restore-keys: |
+            uv-deploy-${{ runner.os }}-
+      
       - name: Install uv via pip (with timeout)
         timeout-minutes: 5
         run: |

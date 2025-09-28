@@ -64,6 +64,16 @@ runs:
         uv --version
       shell: bash
 
+    - name: Cache UV dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/uv
+          .venv
+        key: uv-${{ runner.os }}-py${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+        restore-keys: |
+          uv-${{ runner.os }}-py${{ steps.setup_python.outputs.python-version }}-
+
     - name: Install uv dependencies with timeout
       timeout-minutes: 10  # Prevent hanging on dependency resolution
       run: |
