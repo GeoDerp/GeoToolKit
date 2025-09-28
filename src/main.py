@@ -36,7 +36,7 @@ def main() -> None:
         print(f"Network allow-list: {args.network_allowlist}")
 
     # 1. Read projects.json
-    projects_data: dict[str, list[dict[str, Any]]] = {}
+    projects_data: dict[str, Any] = {}
     try:
         with open(args.input) as f:
             projects_data = json.load(f)
@@ -46,6 +46,8 @@ def main() -> None:
     except json.JSONDecodeError:
         print(f"Error: Invalid JSON in input file {args.input}")
         return
+
+    timeouts = projects_data.get("timeouts", {})
 
     def _normalize_network_from_config(
         proj: dict[str, Any],
@@ -213,7 +215,7 @@ def main() -> None:
             per_project_allowlist = sorted(combined) if combined else None
 
         scan_result = Workflow.run_project_scan(
-            project, network_allowlist=per_project_allowlist
+            project, network_allowlist=per_project_allowlist, timeouts=timeouts
         )
         all_scans.append(scan_result)
 

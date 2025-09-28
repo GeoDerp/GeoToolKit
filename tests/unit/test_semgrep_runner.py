@@ -62,6 +62,7 @@ def test_semgrep_runner_success():
                 capture_output=True,
                 text=True,
                 check=True,
+                timeout=None,
             )
         assert len(findings) == 1
         assert isinstance(findings[0], Finding)

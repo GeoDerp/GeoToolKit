@@ -1,7 +1,7 @@
 import json
 from unittest.mock import MagicMock, patch
-import pytest
 
+import pytest
 import requests
 from src.models.finding import Finding
 from src.orchestration.runners.zap_runner import ZapRunner
@@ -62,8 +62,10 @@ def mock_requests_get(*args, **kwargs):
 
 @pytest.mark.timeout(30)  # 30 second timeout for this test
 def test_zap_runner_success():
-    with patch.dict("os.environ", {"ZAP_SKIP_CONTAINER": "1"}), \
-         patch("requests.get", side_effect=mock_requests_get) as mock_requests_get_patch:
+    with (
+        patch.dict("os.environ", {"ZAP_SKIP_CONTAINER": "1"}),
+        patch("requests.get", side_effect=mock_requests_get) as mock_requests_get_patch,
+    ):
         findings = ZapRunner.run_scan("http://localhost:8080/target")
 
         assert len(findings) == 1
@@ -80,8 +82,12 @@ def test_zap_runner_success():
 
 @pytest.mark.timeout(30)  # 30 second timeout for this test
 def test_zap_runner_connection_error(capsys):
-    with patch.dict("os.environ", {"ZAP_SKIP_CONTAINER": "1"}), \
-         patch("requests.get", side_effect=requests.exceptions.ConnectionError) as mock_requests_get_patch:
+    with (
+        patch.dict("os.environ", {"ZAP_SKIP_CONTAINER": "1"}),
+        patch(
+            "requests.get", side_effect=requests.exceptions.ConnectionError
+        ) as mock_requests_get_patch,
+    ):
         findings = ZapRunner.run_scan("http://localhost:8080/target")
 
         assert len(findings) == 0
@@ -89,10 +95,15 @@ def test_zap_runner_connection_error(capsys):
         assert "Error: Could not connect to ZAP" in captured.out
 
 
-@pytest.mark.timeout(30)  # 30 second timeout for this test  
+@pytest.mark.timeout(30)  # 30 second timeout for this test
 def test_zap_runner_request_exception(capsys):
-    with patch.dict("os.environ", {"ZAP_SKIP_CONTAINER": "1"}), \
-         patch("requests.get", side_effect=requests.exceptions.RequestException("Test Request Error")) as mock_requests_get_patch:
+    with (
+        patch.dict("os.environ", {"ZAP_SKIP_CONTAINER": "1"}),
+        patch(
+            "requests.get",
+            side_effect=requests.exceptions.RequestException("Test Request Error"),
+        ) as mock_requests_get_patch,
+    ):
         findings = ZapRunner.run_scan("http://localhost:8080/target")
 
         assert len(findings) == 0
@@ -108,8 +119,12 @@ def test_zap_runner_json_decode_error(capsys):
         mock_response.raise_for_status.return_value = None
         return mock_response
 
-    with patch.dict("os.environ", {"ZAP_SKIP_CONTAINER": "1"}), \
-         patch("requests.get", side_effect=mock_invalid_json_response) as mock_requests_get_patch:
+    with (
+        patch.dict("os.environ", {"ZAP_SKIP_CONTAINER": "1"}),
+        patch(
+            "requests.get", side_effect=mock_invalid_json_response
+        ) as mock_requests_get_patch,
+    ):
         findings = ZapRunner.run_scan("http://localhost:8080/target")
 
         assert len(findings) == 0

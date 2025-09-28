@@ -1,4 +1,9 @@
 {
+  "timeouts": {
+    "dast_seconds": 300,
+    "scan_seconds": 1800,
+    "runner_seconds": 600
+  },
   "projects": [
     {
       "url": "https://github.com/microsoft/TypeScript",

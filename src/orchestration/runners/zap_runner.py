@@ -21,7 +21,9 @@ class ZapRunner:
 
     @staticmethod
     def run_scan(
-        target_url: str, network_allowlist: list[str] | None = None
+        target_url: str,
+        network_allowlist: list[str] | None = None,
+        timeout: int | None = None,
     ) -> list[Finding]:
         """Runs an OWASP ZAP scan on the specified target URL and returns a list of findings."""
         findings: list[Finding] = []
@@ -146,7 +148,7 @@ class ZapRunner:
                 while time.time() < deadline and attempt_count < max_attempts:
                     try:
                         r = requests.get(
-                            f"{zap_base_url}/JSON/core/view/version/", timeout=5
+                            f"{zap_base_url}/JSON/core/view/version/", timeout=10
                         )
                         r.raise_for_status()
                         ready = True
@@ -215,11 +217,11 @@ class ZapRunner:
             # Wait briefly for spider to complete (mocked in tests)
             # Add timeout to prevent infinite loops
             spider_timeout = time.time() + 30  # 30 second timeout
-            for attempt in range(10):  # Maximum 10 attempts
+            for _attempt in range(10):  # Maximum 10 attempts
                 if time.time() > spider_timeout:
                     print("Spider scan timeout reached, continuing with active scan")
                     break
-                    
+
                 status_response = requests.get(
                     f"{zap_base_url}/JSON/spider/view/status/",
                     params={"scanId": spider_scan_id},
@@ -243,11 +245,11 @@ class ZapRunner:
             ascan_id = response.json().get("scan", "0")
             # Add timeout to prevent infinite loops
             ascan_timeout = time.time() + 30  # 30 second timeout
-            for attempt in range(10):  # Maximum 10 attempts
+            for _attempt in range(10):  # Maximum 10 attempts
                 if time.time() > ascan_timeout:
                     print("Active scan timeout reached, fetching results")
                     break
-                    
+
                 status_response = requests.get(
                     f"{zap_base_url}/JSON/ascan/view/status/",
                     params={"scanId": ascan_id},

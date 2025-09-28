@@ -13,7 +13,7 @@ class SemgrepRunner:
     """
 
     @staticmethod
-    def run_scan(project_path: str) -> list[Finding]:
+    def run_scan(project_path: str, timeout: int | None = None) -> list[Finding]:
         """Runs Semgrep on the specified project path and returns a list of findings."""
         project_path_obj = Path(project_path)
 
@@ -85,7 +85,9 @@ class SemgrepRunner:
 
         try:
             print(f"Running Semgrep command: {' '.join(command)}")
-            result = subprocess.run(command, capture_output=True, text=True, check=True)
+            result = subprocess.run(
+                command, capture_output=True, text=True, check=True, timeout=timeout
+            )
             json_output = result.stdout
 
             if not json_output.strip():
@@ -93,6 +95,9 @@ class SemgrepRunner:
                 return []
 
             return OutputParser.parse_semgrep_json(json_output)
+        except subprocess.TimeoutExpired:
+            print("Error: Semgrep scan timed out.")
+            return []
         except subprocess.CalledProcessError as e:
             print(f"Error running Semgrep: {e}")
             print(f"Stderr: {e.stderr}")

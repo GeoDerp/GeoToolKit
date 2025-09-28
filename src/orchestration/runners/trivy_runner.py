@@ -12,7 +12,9 @@ class TrivyRunner:
     """
 
     @staticmethod
-    def run_scan(target_path: str, scan_type: str = "fs") -> list[Finding]:
+    def run_scan(
+        target_path: str, scan_type: str = "fs", timeout: int | None = None
+    ) -> list[Finding]:
         """Runs Trivy on the specified target path and scan type, returning a list of findings."""
         target_path_obj = Path(target_path)
         # Use the local repository seccomp profile for all runs
@@ -37,7 +39,9 @@ class TrivyRunner:
 
         try:
             print(f"Running Trivy command: {' '.join(command)}")
-            result = subprocess.run(command, capture_output=True, text=True, check=True)
+            result = subprocess.run(
+                command, capture_output=True, text=True, check=True, timeout=timeout
+            )
             json_output = result.stdout
 
             if not json_output.strip():
@@ -45,6 +49,9 @@ class TrivyRunner:
                 return []
 
             return OutputParser.parse_trivy_json(json_output)
+        except subprocess.TimeoutExpired:
+            print("Error: Trivy scan timed out.")
+            return []
         except subprocess.CalledProcessError as e:
             print(f"Error running Trivy: {e}")
             print(f"Stderr: {e.stderr}")

@@ -12,7 +12,7 @@ class OSVRunner:
     """
 
     @staticmethod
-    def run_scan(project_path: str) -> list[Finding]:
+    def run_scan(project_path: str, timeout: int | None = None) -> list[Finding]:
         """Runs OSV-Scanner on the specified project path and returns a list of findings."""
         project_path_obj = Path(project_path)
         seccomp_path = str(
@@ -40,7 +40,9 @@ class OSVRunner:
             print(f"Running OSV-Scanner command: {' '.join(command)}")
             # OSV-Scanner may return non-zero exit codes when vulnerabilities are found
             # We'll capture output regardless of exit code
-            result = subprocess.run(command, capture_output=True, text=True, check=True)
+            result = subprocess.run(
+                command, capture_output=True, text=True, check=True, timeout=timeout
+            )
             json_output = result.stdout
 
             if not json_output.strip():
@@ -50,6 +52,9 @@ class OSVRunner:
             return OutputParser.parse_osv_scanner_json(json_output)
         except FileNotFoundError:
             print("OSV-Scanner command not found")
+            return []
+        except subprocess.TimeoutExpired:
+            print("Error: OSV-Scanner scan timed out.")
             return []
         except subprocess.CalledProcessError as e:
             # Align with unit test expectations on error wording

@@ -19,7 +19,9 @@ class Workflow:
 
     @staticmethod
     def run_project_scan(
-        project: Project, network_allowlist: list[str] | None = None
+        project: Project,
+        network_allowlist: list[str] | None = None,
+        timeouts: dict[str, int] | None = None,
     ) -> Scan:
         """Runs a complete security scan for a given project using all configured runners."""
         scan = Scan(projectId=project.id, status="in_progress")
@@ -36,8 +38,11 @@ class Workflow:
         ):
             print(f"Detected application URL, running DAST-only: {project.url}")
             try:
+                dast_timeout = timeouts.get("dast_seconds") if timeouts else None
                 zap_findings = ZapRunner.run_scan(
-                    url_str, network_allowlist=network_allowlist
+                    url_str,
+                    network_allowlist=network_allowlist,
+                    timeout=dast_timeout,
                 )
                 all_findings.extend(zap_findings)
                 scan.status = "completed"
@@ -52,7 +57,7 @@ class Workflow:
             try:
                 all_findings.extend(
                     Workflow._run_security_scans(
-                        project_path_str, project, network_allowlist
+                        project_path_str, project, network_allowlist, timeouts
                     )
                 )
             except Exception as e:
@@ -85,7 +90,7 @@ class Workflow:
                     # Run security scans on the cloned repository
                     all_findings.extend(
                         Workflow._run_security_scans(
-                            str(project_path), project, network_allowlist
+                            str(project_path), project, network_allowlist, timeouts
                         )
                     )
                 except git.GitCommandError as e:
@@ -105,18 +110,24 @@ class Workflow:
 
     @staticmethod
     def _run_security_scans(
-        project_path: str, project: Project, network_allowlist: list[str] | None
+        project_path: str,
+        project: Project,
+        network_allowlist: list[str] | None,
+        timeouts: dict[str, int] | None = None,
     ) -> list[Finding]:
         """
         Runs all security scanning tools on the given project path.
         All tools run in secure, isolated Podman containers.
         """
         all_findings: list[Finding] = []
+        runner_timeout = timeouts.get("runner_seconds") if timeouts else None
         try:
             # SAST: Semgrep - Static code analysis
             print("🔍 Running Semgrep (SAST)...")
             try:
-                semgrep_findings = SemgrepRunner.run_scan(project_path)
+                semgrep_findings = SemgrepRunner.run_scan(
+                    project_path, timeout=runner_timeout
+                )
                 all_findings.extend(semgrep_findings)
                 print(f"✅ Semgrep found {len(semgrep_findings)} findings.")
             except Exception as e:
@@ -125,7 +136,9 @@ class Workflow:
             # SCA: Trivy - Vulnerability scanning
             print("🔍 Running Trivy (SCA)...")
             try:
-                trivy_findings = TrivyRunner.run_scan(project_path, scan_type="fs")
+                trivy_findings = TrivyRunner.run_scan(
+                    project_path, scan_type="fs", timeout=runner_timeout
+                )
                 all_findings.extend(trivy_findings)
                 print(f"✅ Trivy found {len(trivy_findings)} findings.")
             except Exception as e:
@@ -134,7 +147,7 @@ class Workflow:
             # SCA: OSV-Scanner - Open Source Vulnerabilities
             print("🔍 Running OSV-Scanner (SCA)...")
             try:
-                osv_findings = OSVRunner.run_scan(project_path)
+                osv_findings = OSVRunner.run_scan(project_path, timeout=runner_timeout)
                 all_findings.extend(osv_findings)
                 print(f"✅ OSV-Scanner found {len(osv_findings)} findings.")
             except Exception as e:
@@ -143,9 +156,12 @@ class Workflow:
             # DAST: OWASP ZAP - Dynamic analysis (skip for source code scanning)
             if Workflow._should_run_dast_scan(project):
                 print("🔍 Running OWASP ZAP (DAST)...")
+                dast_timeout = timeouts.get("dast_seconds") if timeouts else None
                 try:
                     zap_findings = ZapRunner.run_scan(
-                        str(project.url), network_allowlist=network_allowlist
+                        str(project.url),
+                        network_allowlist=network_allowlist,
+                        timeout=dast_timeout,
                     )
                     all_findings.extend(zap_findings)
                     print(f"✅ OWASP ZAP found {len(zap_findings)} findings.")
