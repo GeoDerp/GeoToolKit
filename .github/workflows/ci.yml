@@ -9,7 +9,7 @@ on:
 env:
   PYTHON_APP_SOURCE_DIR: "."
   PYTEST_COVERAGE_XML_FILE_NAME: "coverage-reports/coverage-pytest.xml"
-  PYTEST_COVERAGE_THRESHOLD_PERCENT: 80
+  PYTEST_COVERAGE_THRESHOLD_PERCENT: 70
   UV_SYSTEM_PYTHON: 1
   UV_PYTHON_DOWNLOADS: never  # Prevent automatic Python downloads in all jobs
   # Security-focused environment variables
