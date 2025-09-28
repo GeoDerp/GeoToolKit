@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: quick-check
     if: needs.quick-check.outputs.should-continue == 'true'
-    timeout-minutes: 45  # Prevent 6-hour hangs
+    timeout-minutes: 30  # Reduced from 45 to 30 minutes
     permissions:
       contents: read
       issues: write
@@ -62,6 +62,10 @@ jobs:
       packages: write
       actions: read
       security-events: write
+    
+    # Add fail-fast strategy
+    strategy:
+      fail-fast: true
     
     steps:
       - name: Checkout repository

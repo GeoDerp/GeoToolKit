@@ -141,7 +141,9 @@ class ZapRunner:
                 deadline = time.time() + float(
                     os.environ.get("ZAP_READY_TIMEOUT", str(DEFAULT_ZAP_READY_TIMEOUT))
                 )
-                while time.time() < deadline:
+                max_attempts = 30  # Maximum attempts to prevent infinite loops
+                attempt_count = 0
+                while time.time() < deadline and attempt_count < max_attempts:
                     try:
                         r = requests.get(
                             f"{zap_base_url}/JSON/core/view/version/", timeout=5
@@ -151,6 +153,7 @@ class ZapRunner:
                         break
                     except Exception:
                         time.sleep(2)
+                        attempt_count += 1
                 if not ready:
                     print("ZAP did not become ready within timeout.")
                     # Try to print container logs for diagnostics
@@ -210,7 +213,13 @@ class ZapRunner:
             response.raise_for_status()
             spider_scan_id = response.json().get("scan", "0")
             # Wait briefly for spider to complete (mocked in tests)
-            for _ in range(3):
+            # Add timeout to prevent infinite loops
+            spider_timeout = time.time() + 30  # 30 second timeout
+            for attempt in range(10):  # Maximum 10 attempts
+                if time.time() > spider_timeout:
+                    print("Spider scan timeout reached, continuing with active scan")
+                    break
+                    
                 status_response = requests.get(
                     f"{zap_base_url}/JSON/spider/view/status/",
                     params={"scanId": spider_scan_id},
@@ -232,7 +241,13 @@ class ZapRunner:
             response = requests.get(ascan_url, params=ascan_params, timeout=30)
             response.raise_for_status()
             ascan_id = response.json().get("scan", "0")
-            for _ in range(3):
+            # Add timeout to prevent infinite loops
+            ascan_timeout = time.time() + 30  # 30 second timeout
+            for attempt in range(10):  # Maximum 10 attempts
+                if time.time() > ascan_timeout:
+                    print("Active scan timeout reached, fetching results")
+                    break
+                    
                 status_response = requests.get(
                     f"{zap_base_url}/JSON/ascan/view/status/",
                     params={"scanId": ascan_id},
