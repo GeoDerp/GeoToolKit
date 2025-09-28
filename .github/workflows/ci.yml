@@ -39,7 +39,9 @@ jobs:
         run: |
           echo "Running quick syntax validation..."
           # Basic Python syntax check on key files
-          python -m py_compile src/main.py src/models/*.py src/orchestration/*.py || { echo "should-continue=false" >> $GITHUB_OUTPUT; exit 1; }
+          python -m py_compile src/main.py && \
+          find src/models -name "*.py" -exec python -m py_compile {} \; && \
+          find src/orchestration -name "*.py" -exec python -m py_compile {} \; || { echo "should-continue=false" >> $GITHUB_OUTPUT; exit 1; }
           # Check project structure
           [ -f "pyproject.toml" ] || { echo "should-continue=false" >> $GITHUB_OUTPUT; exit 1; }
           [ -f ".python-version" ] || { echo "should-continue=false" >> $GITHUB_OUTPUT; exit 1; }
