@@ -67,10 +67,28 @@ pip install https://github.com/GeoDerp/GeoToolKit/releases/latest/download/geoto
 # Run the CLI
 geotoolkit --input projects.json --output report.md --database-path data/offline-db.tar.gz
 ```
+#### Run the MCP server (optional)
+
+You can start the Model Context Protocol (MCP) server to manage `projects.json` and trigger scans programmatically.
+
+From an installed environment (preferred):
+```bash
+# Start built-in MCP server (default host 127.0.0.1, default port 9000)
+# --mcp-server enables MCP mode; --mcp-host/--mcp-port override listen address.
+geotoolkit --mcp-server --mcp-host 127.0.0.1 --mcp-port 9000 --database-path data/offline-db.tar.gz
+```
+
+Quick API example:
+```bash
+# Trigger a scan by POSTing a projects.json (server returns report text)
+curl -s -X POST "http://127.0.0.1:9000/runScan" \
+  -H "Content-Type: application/json" \
+  --data-binary @projects.json > security-report.md
+```
 
 #### Development Installation
 
-For development or to access the MCP server:
+For development:
 
 1. **Clone the repository**:
    ```bash

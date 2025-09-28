@@ -345,7 +345,9 @@ class ProductionValidator:
 
         # Note: Dockerfile has been removed - the project now focuses on Python package distribution
         # Container security is now handled at runtime by Podman when running individual security tools
-        logger.info("Docker container building disabled - using Python package distribution model")
+        logger.info(
+            "Docker container building disabled - using Python package distribution model"
+        )
 
         # Check for hardcoded secrets in config files
         config_files = ["src/main.py", "projects.json", "pyproject.toml"]
