@@ -373,17 +373,6 @@ The generated reports include:
 - **Compliance Mapping** - NIST, OWASP Top 10, ISM alignment
 - **Recommendations** - Actionable remediation steps
 
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these guidelines:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add or update tests
-5. Ensure all tests pass
-6. Submit a pull request
-
 ### Development Setup
 
 ```bash
@@ -406,7 +395,6 @@ Current version: **v0.1.0** (Beta)
 ## 📞 Support
 
 - **Issues**: [GitHub Issues](https://github.com/GeoDerp/GeoToolKit/issues)
-- **Documentation**: [Project Wiki](https://github.com/GeoDerp/GeoToolKit/wiki)
 - **Security Issues**: Please report privately via email
 
 ---
