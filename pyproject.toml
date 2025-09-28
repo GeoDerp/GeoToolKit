@@ -55,7 +55,6 @@ package = true
 
 [project.scripts]
 geotoolkit = "src.main:main"
-geotoolkit-mcp = "mcp.server:main"
 
 [project.optional-dependencies]
 dev = [
@@ -118,7 +117,7 @@ ignore = ["E501", "B008", "B905", "E722", "W291", "W293", "C401"]
 [tool.ruff.lint.per-file-ignores]
 "src/main.py" = ["C901"]
 "src/orchestration/*" = ["C901"]
-"mcp/server.py" = ["C901"]
+"mcp/mcp_server.py" = ["C901"]
 "tests/**/*" = ["F841", "B017"]
 # Be more lenient with scripts directory
 "scripts/**/*" = ["C901", "E722", "F841", "B007", "W291", "W293", "C401"]

@@ -2,11 +2,7 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/python
 {
 	"name": "python-uv-devcontainer",
-	"build": {
-		"dockerfile": "../Dockerfile",
-		"context": "../",
-		"target": "dev"
-	},
+	"image": "mcr.microsoft.com/devcontainers/python:3.11-bullseye",
 	"features": {
 		"ghcr.io/devcontainers/features/common-utils:2": {}
 	},
@@ -54,5 +50,5 @@
 		}
 	  },
 
-	"postCreateCommand": "uv venv"
+	"postCreateCommand": "pip install uv && uv venv && uv sync --dev"
 }

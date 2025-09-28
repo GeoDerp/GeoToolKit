@@ -200,7 +200,7 @@ def test_documented_features():
             issues.append(f"Missing security runner: {runner}")
 
     # Check MCP server
-    if Path("mcp/server.py").exists():
+    if Path("mcp/mcp_server.py").exists():
         print("✅ MCP server implementation")
     else:
         print("❌ MCP server - MISSING")

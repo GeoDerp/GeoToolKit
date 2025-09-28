@@ -1,7 +1,7 @@
 {
   "name": "GeoToolKit MCP",
   "app_id": "geotoolkit.mcp",
-  "entry": "mcp/server.py",
+  "entry": "mcp/mcp_server.py",
   "version": "0.1.0",
   "description": "MCP server for creating projects.json and running GeoToolKit scans",
   "tools": [

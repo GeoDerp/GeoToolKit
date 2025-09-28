@@ -53,6 +53,25 @@ GeoToolKit is a comprehensive, offline software assurance toolkit designed to sc
 
 ### Installation
 
+#### Quick Installation (for users)
+
+If you just want to use GeoToolKit without development setup:
+
+```bash
+# Install from PyPI (when published)
+pip install geotoolkit
+
+# Or install from GitHub releases
+pip install https://github.com/GeoDerp/GeoToolKit/releases/latest/download/geotoolkit-*.whl
+
+# Run the CLI
+geotoolkit --input projects.json --output report.md --database-path data/offline-db.tar.gz
+```
+
+#### Development Installation
+
+For development or to access the MCP server:
+
 1. **Clone the repository**:
    ```bash
    git clone https://github.com/GeoDerp/GeoToolKit.git
@@ -65,6 +84,9 @@ GeoToolKit is a comprehensive, offline software assurance toolkit designed to sc
    uv venv
    source .venv/bin/activate
    uv sync
+   
+   # For MCP server support
+   uv sync --extra mcp
    
    <!-- # Or using pip
    python -m venv .venv
@@ -112,27 +134,12 @@ An optional FastMCP server is provided to programmatically manage `projects.json
 
 ```bash
 # Start MCP server (requires fastmcp)
-uv run python mcp/server.py
+uv run python mcp/mcp_server.py
 
 # Or invoke tools directly from Python
-uv run python -c "import mcp.server as s; print(s.createProjects([{ 'url': 'https://github.com/fastapi/fastapi', 'name': 'fastapi', 'network_config': { 'ports': ['8000'], 'protocol': 'http', 'allowed_egress': { 'localhost': ['8000'] } } }]))"
+uv run python -c "import mcp.mcp_server as s; print(s.createProjects([{ 'url': 'https://github.com/fastapi/fastapi', 'name': 'fastapi', 'network_config': { 'ports': ['8000'], 'protocol': 'http', 'allowed_egress': { 'localhost': ['8000'] } } }]))"
 ```
 
-#### Running with Docker
-
-You can also run the MCP server as a container for a more isolated setup.
-
-1.  **Build the Docker image**:
-    ```bash
-    podman build -t geotoolkit-mcp .
-    ```
-
-2.  **Run the container**:
-    ```bash
-    podman run -d -p 8080:8080 --name geotoolkit-mcp-server geotoolkit-mcp
-    ```
-    This will start the MCP server and expose it on port 8080.
-    
 Tools:
 - `createProjects(projects, outputPath?)` → writes projects.json and normalizes any `network_config` into `network_allow_hosts`, `network_allow_ip_ranges`, and `ports`
 - `normalizeProjects(inputPath?, outputPath?)` → reads an existing projects.json and derives explicit allowlists from `network_config`

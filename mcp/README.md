@@ -13,7 +13,7 @@ Model Context Protocol (MCP) extension for GeoToolKit, implemented with FastMCP.
 
 ## Entry and Manifest
 
-- Entry script: `mcp/server.py`
+- Entry script: `mcp/mcp_server.py`
 - Manifest: `mcp/manifest.json`
 
 ## Tools
@@ -98,7 +98,7 @@ ports: ["8000"]
 You can start the MCP server directly for local testing:
 
 ```
-uv run python mcp/server.py
+uv run python mcp/mcp_server.py
 ```
 
 Clients can invoke the tools declared in `mcp/manifest.json`. When integrated, call `createProjects` or `normalizeProjects` before `runScan`.
