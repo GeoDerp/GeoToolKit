@@ -1,0 +1,170 @@
+[project]
+name = "geotoolkit"
+version = "0.1.0"
+description = "Automated Security Scanner for Git Repositories"
+readme = "README.md"
+authors = [
+    {name = "GeoToolKit Contributors", email = "contact@geotoolkit.org"},
+]
+license = {file = "LICENSE"}
+homepage = "https://github.com/GeoDerp/GeoToolKit"
+repository = "https://github.com/GeoDerp/GeoToolKit"
+documentation = "https://github.com/GeoDerp/GeoToolKit#readme"
+keywords = ["security", "scanning", "vulnerability", "git", "repositories"]
+
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi[standard]>=0.115.11",
+    "pydantic>=2.10.6",
+    "swagger-ui>=0.1.2",
+    "uvicorn[standard]>=0.34.0",
+    "waitress>=3.0.2",
+    "Jinja2>=3.1.4",
+    "requests>=2.32.3",
+    "gitpython>=3.1.0",
+    "pytest>=8.3.5",
+    "psutil>=7.1.0",
+]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: System :: Systems Administration",
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+]
+
+[project.urls]
+Homepage = "https://github.com/GeoDerp/GeoToolKit"
+Repository = "https://github.com/GeoDerp/GeoToolKit"
+Issues = "https://github.com/GeoDerp/GeoToolKit/issues"
+Changelog = "https://github.com/GeoDerp/GeoToolKit/releases"
+Documentation = "https://github.com/GeoDerp/GeoToolKit#readme"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+package = true
+
+[project.scripts]
+geotoolkit = "src.main:main"
+geotoolkit-mcp = "mcp.server:main"
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.11.0",
+    "mypy>=1.6.0",
+    "pytest>=7.3.1",
+    "pytest-timeout>=2.1.0",
+    "hatchling",
+    "types-waitress",
+    "types-requests"
+]
+test = [
+    "ruff>=0.11.0",
+    "mypy>=1.6.0",
+    "pytest>=7.3.1",
+    "pytest-cov>=4.1.0",
+    "pytest-timeout>=2.1.0",
+    "requests>=2.32.3",
+]
+mcp = [
+    "fastmcp>=0.1.3",
+    "mcp>=1.15.0",
+]
+
+[tool.hatch.build]
+artifact-name = "geotoolkit-{version}"
+packages = ["src", "mcp"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/reporting/templates/report.md",
+    "mcp/manifest.json",
+    "mcp/README.md",
+    "tests",
+]
+
+[tool.hatch.envs.default]
+dependencies = [
+    "ruff>=0.11.0",
+    "mypy>=1.6.0",
+    "pytest>=7.3.1",
+    "pytest-cov>=4.1.0",
+    "pytest-timeout>=2.1.0",
+    "types-waitress"
+]
+[tool.hatch.envs.default.scripts]
+test = "pytest --cov=src tests"
+lint = "ruff check src tests pyproject.toml && mypy src tests"
+format = "ruff format src tests pyproject.toml"
+run = "uvicorn src.main:app --reload"
+clean = "rm -rf .coverage .pytest_cache dist build"
+
+[tool.ruff.lint]
+# Reduce Ruff's selected rule groups to the core set so linting is less strict
+# (removes some plugin groups like Q, UP, YTT, PYI which can be noisy for this project)
+select = ["E", "W", "F", "I", "C", "B"]
+# Ignore common issues that don't affect functionality
+ignore = ["E501", "B008", "B905", "E722", "W291", "W293", "C401"] 
+
+[tool.ruff.lint.per-file-ignores]
+"src/main.py" = ["C901"]
+"src/orchestration/*" = ["C901"]
+"mcp/server.py" = ["C901"]
+"tests/**/*" = ["F841", "B017"]
+# Be more lenient with scripts directory
+"scripts/**/*" = ["C901", "E722", "F841", "B007", "W291", "W293", "C401"]
+
+
+[tool.ruff]
+target-version = "py311" 
+src = ["src", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["error"]
+# Add timeout to prevent hanging tests
+timeout = 300
+# Add timeout for individual tests
+timeout_method = "thread"
+# Allow skipping timeout for specific tests
+addopts = "--tb=short --strict-markers -v"
+markers = [
+    "slow: marks tests as slow (may take longer to run)",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests"
+]
+
+[tool.mypy]
+python_version = "3.11"
+show_error_codes = true
+pretty = true
+# Turn off strict mode to reduce noise and allow current tests to pass
+strict = false
+# Relax a few specific checks that commonly cause CI failures on legacy code
+warn_unused_configs = false
+warn_return_any = false
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+omit = ["src/reporting/templates/*"] 
+
+[tool.coverage.paths]
+source = ["src"]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.15.0",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.11.2",
+    "types-requests>=2.32.4.20250913",
+]

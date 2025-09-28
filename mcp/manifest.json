@@ -1,0 +1,47 @@
+{
+  "name": "GeoToolKit MCP",
+  "app_id": "geotoolkit.mcp",
+  "entry": "mcp/server.py",
+  "version": "0.1.0",
+  "description": "MCP server for creating projects.json and running GeoToolKit scans",
+  "tools": [
+    {
+      "name": "createProjects",
+      "description": "Create a projects.json and normalize network_config into allowlisted hosts, CIDR ranges, and ports",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "projects": {
+            "type": "array",
+            "items": {"type": "object"}
+          },
+          "outputPath": {"type": "string"}
+        },
+        "required": ["projects"]
+      }
+    },
+    {
+      "name": "runScan",
+      "description": "Run GeoToolKit scan and return report text",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "inputPath": {"type": "string"},
+          "outputPath": {"type": "string"},
+          "databasePath": {"type": "string"}
+        }
+      }
+    },
+    {
+      "name": "normalizeProjects",
+      "description": "Normalize an existing projects.json by interpreting network_config into explicit allowlist fields",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "inputPath": {"type": "string"},
+          "outputPath": {"type": "string"}
+        }
+      }
+    }
+  ]
+}

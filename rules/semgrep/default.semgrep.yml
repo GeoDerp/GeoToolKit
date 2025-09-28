@@ -1,0 +1,20 @@
+rules:
+  - id: hardcoded-password
+    languages: [python, javascript, go, java]
+    message: "Possible hardcoded password detected"
+    severity: WARNING
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $VAR = "$SECRET"
+          - pattern: |
+              const $VAR = "$SECRET"
+          - pattern: |
+              var $VAR = "$SECRET"
+      - metavariable-pattern:
+          metavariable: $VAR
+          patterns:
+            - pattern-regex: (?i)pass(word)?|secret|token|key
+    metadata:
+      category: security
+      cwe: CWE-259

@@ -1,0 +1,36 @@
+{
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./tests",
+        "-p",
+        "*_test.py"
+    ],
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false,
+    "dev.containers.dockerPath": "podman",
+    "dev.containers.dockerSocketPath": "/run/user/1000/podman/podman.sock",
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": false,
+        "markdown": true,
+        "scminput": false,
+        "python": true,
+        "javascript": true,
+        "typescript": true,
+        "json": true,
+        "yaml": true,
+        "dockerfile": true
+    },
+    "github.copilot.inlineSuggest.enable": true,
+    "github.copilot.advanced": {
+        "listCount": 10,
+        "inlineSuggestCount": 3
+    },
+    "editor.inlineSuggest.enabled": true,
+    "editor.suggestOnTriggerCharacters": true,
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true
+}

@@ -1,0 +1,46 @@
+{
+  "database_info": {
+    "created_timestamp": "2025-01-27T07:30:00Z",
+    "database_type": "mock_offline_bundle",
+    "version": "1.0.0",
+    "sources": ["nvd", "osv", "ghsa"],
+    "total_vulnerabilities": 125000,
+    "last_updated": "2025-01-27",
+    "languages_supported": ["Python", "JavaScript", "Go", "Java", "PHP", "Ruby", "C#", "Rust", "C/C++"]
+  },
+  "nvd_data": {
+    "recent_cves": 1500,
+    "years_covered": [2023, 2024, 2025],
+    "total_entries": 75000
+  },
+  "osv_data": {
+    "ecosystems": ["PyPI", "npm", "Go", "Maven", "Packagist", "RubyGems", "NuGet", "crates.io"],
+    "advisories_count": 45000
+  },
+  "ghsa_data": {
+    "github_advisories": 5000,
+    "severity_breakdown": {
+      "critical": 500,
+      "high": 1500,
+      "medium": 2000,
+      "low": 1000
+    }
+  },
+  "sample_vulnerabilities": [
+    {
+      "id": "CVE-2024-MOCK-001",
+      "severity": "HIGH",
+      "description": "Mock SQL injection vulnerability in sample package",
+      "affected_packages": ["sample-package"],
+      "ecosystem": "PyPI"
+    },
+    {
+      "id": "GHSA-MOCK-2024-001",
+      "severity": "CRITICAL",
+      "description": "Mock remote code execution in test framework",
+      "affected_packages": ["test-framework"],
+      "ecosystem": "npm"
+    }
+  ],
+  "validation_note": "This is a mock database for testing GeoToolKit functionality. In production, use real vulnerability databases."
+}

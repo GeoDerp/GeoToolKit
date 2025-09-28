@@ -1,0 +1,24 @@
+{
+    "recommendations": [
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "ms-python.debugpy",
+        "ms-python.python",
+        "ms-python.mypy-type-checker",
+        "ms-vscode-remote.remote-containers",
+        "ms-azuretools.vscode-docker",
+        "Semgrep.semgrep",
+        "AquaSecurityOfficial.trivy-vulnerability-scanner",
+        "GitHub.vscode-github-actions",
+        "eamodio.gitlens",
+        "bierner.markdown-mermaid",
+        "redhat.vscode-yaml",
+        "redhat.vscode-xml",
+        "mechatroner.rainbow-csv",
+        "ecmel.vscode-html-css",
+        "esbenp.prettier-vscode",
+        "editorconfig.editorconfig",
+        "streetsidesoftware.code-spell-checker"
+    ]
+}
+
