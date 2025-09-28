@@ -16,7 +16,7 @@ from typing import Any
 
 # Optional MCP dependencies - graceful degradation if not available
 try:
-    from fastmcp import FastMCP  
+    from fastmcp import FastMCP
 
     MCP_AVAILABLE = True
 except ImportError:  # pragma: no cover
@@ -34,10 +34,7 @@ APP_ROOT = Path(__file__).resolve().parents[1]
 
 if MCP_AVAILABLE:
     # Initialize the MCP server
-    mcp = FastMCP(
-        name="geotoolkit-security-scanner",
-        version="1.0.0"
-    )
+    mcp = FastMCP(name="geotoolkit-security-scanner", version="1.0.0")
 else:
     # Create a fallback instance
     mcp = FastMCP()
@@ -238,12 +235,12 @@ def normalizeProjects(
 def main() -> None:
     """Main entry point for MCP server CLI."""
     import os
-    
+
     # Get host and port from environment variables (set by main CLI)
-    host = os.environ.get('MCP_HOST', '127.0.0.1')
-    port = int(os.environ.get('MCP_PORT', '9000'))
-    database_path = os.environ.get('DATABASE_PATH', '')
-    
+    host = os.environ.get("MCP_HOST", "127.0.0.1")
+    port = int(os.environ.get("MCP_PORT", "9000"))
+    database_path = os.environ.get("DATABASE_PATH", "")
+
     if MCP_AVAILABLE:
         print(f"Starting MCP server on {host}:{port}")
         if database_path:

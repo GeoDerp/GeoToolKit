@@ -12,30 +12,27 @@ from src.reporting.report import ReportGenerator
 def main() -> None:
     """Main entry point for the Automated Malicious Code Scanner CLI."""
     parser = argparse.ArgumentParser(description="Automated Malicious Code Scanner")
-    
+
     # MCP server arguments
     parser.add_argument(
-        "--mcp-server", 
-        action="store_true", 
-        help="Start the MCP server instead of running a scan."
+        "--mcp-server",
+        action="store_true",
+        help="Start the MCP server instead of running a scan.",
     )
     parser.add_argument(
-        "--mcp-host", 
-        default="127.0.0.1", 
-        help="Host for MCP server (default: 127.0.0.1)."
+        "--mcp-host",
+        default="127.0.0.1",
+        help="Host for MCP server (default: 127.0.0.1).",
     )
     parser.add_argument(
-        "--mcp-port", 
-        default=9000, 
-        type=int, 
-        help="Port for MCP server (default: 9000)."
+        "--mcp-port",
+        default=9000,
+        type=int,
+        help="Port for MCP server (default: 9000).",
     )
-    
+
     # Standard scanning arguments
-    parser.add_argument(
-        "--input", 
-        help="Path to the projects.json file."
-    )
+    parser.add_argument("--input", help="Path to the projects.json file.")
     parser.add_argument(
         "--output",
         help="Path for the generated report (e.g., report.md).",
@@ -57,16 +54,17 @@ def main() -> None:
             # Add the project root to Python path so mcp_server module can be imported
             project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             sys.path.insert(0, project_root)
-            
+
             from mcp_server.mcp_server import main as mcp_main
+
             print(f"Starting MCP server on {args.mcp_host}:{args.mcp_port}")
             print(f"Database path: {args.database_path}")
-            
+
             # Set environment variables for the MCP server to use
-            os.environ['MCP_HOST'] = args.mcp_host
-            os.environ['MCP_PORT'] = str(args.mcp_port)
-            os.environ['DATABASE_PATH'] = args.database_path
-            
+            os.environ["MCP_HOST"] = args.mcp_host
+            os.environ["MCP_PORT"] = str(args.mcp_port)
+            os.environ["DATABASE_PATH"] = args.database_path
+
             mcp_main()
             return
         except ImportError as e:
