@@ -77,13 +77,10 @@ USER ${USER_NAME}
 ## Install project requirements, build project
 RUN uv venv && \
     source .venv/bin/activate && \
-    uv pip install .
+    uv pip install .[mcp]
 
 ## Expose port and run app
 EXPOSE 8080
 
-#for uvicorn (FastAPI)
-CMD [ "sh", "-c", "uv run fastapi run src/**/main.py --port 8080 --workers 4 --host 0.0.0.0" ]
-
-# for gunicorn (eg. Flask)
-# CMD ["sh", "-c", "uv run --frozen gunicorn --bind=0.0.0.0:8080 --workers=8 src/**/main:app"]
+# for fastmcp
+CMD [ "sh", "-c", "uv run geotoolkit-mcp" ]

@@ -118,6 +118,21 @@ uv run python mcp/server.py
 uv run python -c "import mcp.server as s; print(s.createProjects([{ 'url': 'https://github.com/fastapi/fastapi', 'name': 'fastapi', 'network_config': { 'ports': ['8000'], 'protocol': 'http', 'allowed_egress': { 'localhost': ['8000'] } } }]))"
 ```
 
+#### Running with Docker
+
+You can also run the MCP server as a container for a more isolated setup.
+
+1.  **Build the Docker image**:
+    ```bash
+    podman build -t geotoolkit-mcp .
+    ```
+
+2.  **Run the container**:
+    ```bash
+    podman run -d -p 8080:8080 --name geotoolkit-mcp-server geotoolkit-mcp
+    ```
+    This will start the MCP server and expose it on port 8080.
+    
 Tools:
 - `createProjects(projects, outputPath?)` → writes projects.json and normalizes any `network_config` into `network_allow_hosts`, `network_allow_ip_ranges`, and `ports`
 - `normalizeProjects(inputPath?, outputPath?)` → reads an existing projects.json and derives explicit allowlists from `network_config`
