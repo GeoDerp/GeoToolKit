@@ -16,6 +16,14 @@
 		"--security-opt=label=disable"
 	],
 
+	"mounts": [
+    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached",
+    "source=/run/user/1000/podman/podman.sock,target=/run/podman/podman.sock,type=bind,consistency=cached"
+  	],
+	"remoteEnv": {
+	    "CONTAINER_HOST": "unix:///run/podman/podman.sock"
+	},
+
 	"customizations": {
 		"vscode": {
 		  "extensions": [
