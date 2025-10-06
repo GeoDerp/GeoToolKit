@@ -2,7 +2,7 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/python
 {
 	"name": "python-uv-devcontainer",
-	"image": "mcr.microsoft.com/devcontainers/python:3.11-bullseye",
+	"image": "registry.access.redhat.com/ubi9/ubi:latest",
 	"features": {
 		"ghcr.io/devcontainers/features/common-utils:2": {}
 	},
@@ -10,14 +10,16 @@
 	// "workspaceMount": "source=${localWorkspaceFolder}/myApp,target=/workspace,type=bind",
 	// "workspaceFolder": "/workspace",
 
-	//may be needed for Podman
-	"runArgs": [
-		"--userns=keep-id",
-		"--security-opt=label=disable"
-	],
+	"containerUser": "vscode",
+	"updateRemoteUserUID": true,
+	"remoteUser": "vscode",
+
+	  "runArgs": [
+    "--userns=keep-id",
+	"--security-opt=label=disable"
+  	],
 
 	"mounts": [
-    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached",
     "source=/run/user/1000/podman/podman.sock,target=/run/podman/podman.sock,type=bind,consistency=cached"
   	],
 	"remoteEnv": {
@@ -58,5 +60,5 @@
 		}
 	  },
 
-	"postCreateCommand": "pip install uv && uv venv && uv sync --dev"
+	"postCreateCommand": "sudo dnf install podman -y && curl -LsSf https://astral.sh/uv/install.sh | sh && uv sync --dev"
 }
