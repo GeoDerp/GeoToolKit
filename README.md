@@ -86,6 +86,17 @@ curl -s -X POST "http://127.0.0.1:9000/runScan" \
   --data-binary @projects.json > security-report.md
 ```
 
+Example MCP propts 
+```
+createProjects from txt list
+```
+*Generates projects.json from a list of github repos
+
+```
+runScan
+```
+Runns GeoToolKit scanner with projects.json file 
+
 #### Development Installation
 
 For development:
