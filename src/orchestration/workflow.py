@@ -128,8 +128,11 @@ class Workflow:
                 semgrep_findings = SemgrepRunner.run_scan(
                     project_path, timeout=runner_timeout
                 )
-                all_findings.extend(semgrep_findings)
-                print(f"✅ Semgrep found {len(semgrep_findings)} findings.")
+                if semgrep_findings is None:
+                    print("❌ Semgrep scan failed (runner error)")
+                else:
+                    all_findings.extend(semgrep_findings)
+                    print(f"✅ Semgrep found {len(semgrep_findings)} findings.")
             except Exception as e:
                 print(f"❌ Semgrep scan failed: {e}")
 
@@ -139,8 +142,11 @@ class Workflow:
                 trivy_findings = TrivyRunner.run_scan(
                     project_path, scan_type="fs", timeout=runner_timeout
                 )
-                all_findings.extend(trivy_findings)
-                print(f"✅ Trivy found {len(trivy_findings)} findings.")
+                if trivy_findings is None:
+                    print("❌ Trivy scan failed (runner error)")
+                else:
+                    all_findings.extend(trivy_findings)
+                    print(f"✅ Trivy found {len(trivy_findings)} findings.")
             except Exception as e:
                 print(f"❌ Trivy scan failed: {e}")
 
@@ -148,8 +154,11 @@ class Workflow:
             print("🔍 Running OSV-Scanner (SCA)...")
             try:
                 osv_findings = OSVRunner.run_scan(project_path, timeout=runner_timeout)
-                all_findings.extend(osv_findings)
-                print(f"✅ OSV-Scanner found {len(osv_findings)} findings.")
+                if osv_findings is None:
+                    print("❌ OSV-Scanner scan failed (runner error)")
+                else:
+                    all_findings.extend(osv_findings)
+                    print(f"✅ OSV-Scanner found {len(osv_findings)} findings.")
             except Exception as e:
                 print(f"❌ OSV-Scanner scan failed: {e}")
 
@@ -158,9 +167,17 @@ class Workflow:
                 print("🔍 Running OWASP ZAP (DAST)...")
                 dast_timeout = timeouts.get("dast_seconds") if timeouts else None
                 try:
+                    # Pass the project's own network allowlist (if present) to ZAP
+                    proj_allow = getattr(project, "network_allow_hosts", None)
+                    proj_ip_ranges = getattr(project, "network_allow_ip_ranges", None)
+                    proj_ports = getattr(project, "ports", None)
                     zap_findings = ZapRunner.run_scan(
                         str(project.url),
-                        network_allowlist=network_allowlist,
+                        network_allowlist={
+                            "hosts": proj_allow,
+                            "ip_ranges": proj_ip_ranges,
+                            "ports": proj_ports,
+                        },
                         timeout=dast_timeout,
                     )
                     all_findings.extend(zap_findings)
@@ -191,6 +208,20 @@ class Workflow:
         """
         url_str = str(project.url).lower()
         # Skip DAST for GitHub/GitLab/etc URLs (source repositories)
+        # If the project explicitly provides network/port info pointing at localhost
+        # then it's likely the caller started a local container target for DAST
+        # (validation/configs/container-projects.json). In that case allow DAST
+        # even when the URL is a source repo.
+        try:
+            ports = getattr(project, "ports", []) or []
+            allow_hosts = getattr(project, "network_allow_hosts", []) or []
+            # If ports are present and allow_hosts include localhost/127.0.0.1,
+            # assume the intent is to run DAST against a running local target.
+            if ports and any(h.startswith("127.0.0.1") or h.startswith("localhost") for h in allow_hosts):
+                return True
+        except Exception:
+            pass
+
         if any(
             domain in url_str
             for domain in ["github.com", "gitlab.com", "bitbucket.org"]
