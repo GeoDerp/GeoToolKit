@@ -305,6 +305,206 @@ def normalizeProjects(
     return {"ok": True, "path": str(out_abs), "preview": preview}
 
 
+@mcp.tool
+def detectNetworkConfig(
+    projectUrl: str,
+    projectName: str,
+    language: str | None = None,
+    description: str | None = None,
+) -> dict:
+    """
+    Intelligently detect and suggest network configuration (IPs, ports) for a project.
+    Uses heuristics based on project metadata to suggest appropriate network settings.
+    
+    This tool can be enhanced with LLM reasoning to analyze project documentation,
+    README files, and source code to determine likely port configurations.
+    
+    Args:
+        projectUrl: The URL or path to the project
+        projectName: Name of the project
+        language: Programming language (optional)
+        description: Project description (optional)
+        
+    Returns:
+        Suggested network configuration with ports, protocol, and egress rules
+    """
+    # Language-based port detection
+    language_ports = {
+        "Python": ["8000", "5000", "8080"],  # Flask, Django, FastAPI common ports
+        "JavaScript": ["3000", "8080", "4200", "5173"],  # Node, Angular, Vite
+        "TypeScript": ["3000", "8080", "4200", "5173"],
+        "Java": ["8080", "8443", "9090"],  # Spring Boot, Tomcat
+        "Go": ["8080", "3000", "8000"],
+        "Ruby": ["3000", "4567"],  # Rails, Sinatra
+        "PHP": ["8000", "80", "8080"],  # Laravel, Symfony
+        "C#": ["5000", "5001", "8080"],  # ASP.NET
+        "Rust": ["8080", "3000"],
+    }
+    
+    # Framework detection from project name or description
+    framework_hints = {
+        "flask": {"ports": ["5000"], "protocol": "http", "health_endpoint": "/"},
+        "django": {"ports": ["8000"], "protocol": "http", "health_endpoint": "/admin/"},
+        "fastapi": {"ports": ["8000"], "protocol": "http", "health_endpoint": "/docs"},
+        "express": {"ports": ["3000"], "protocol": "http", "health_endpoint": "/"},
+        "react": {"ports": ["3000"], "protocol": "http", "health_endpoint": "/"},
+        "vue": {"ports": ["8080"], "protocol": "http", "health_endpoint": "/"},
+        "angular": {"ports": ["4200"], "protocol": "http", "health_endpoint": "/"},
+        "spring": {"ports": ["8080"], "protocol": "http", "health_endpoint": "/actuator/health"},
+        "rails": {"ports": ["3000"], "protocol": "http", "health_endpoint": "/"},
+        "laravel": {"ports": ["8000"], "protocol": "http", "health_endpoint": "/"},
+        "gin": {"ports": ["8080"], "protocol": "http", "health_endpoint": "/ping"},
+        "fiber": {"ports": ["3000"], "protocol": "http", "health_endpoint": "/"},
+        "nextjs": {"ports": ["3000"], "protocol": "http", "health_endpoint": "/"},
+        "nuxt": {"ports": ["3000"], "protocol": "http", "health_endpoint": "/"},
+        "svelte": {"ports": ["5173"], "protocol": "http", "health_endpoint": "/"},
+        "vite": {"ports": ["5173"], "protocol": "http", "health_endpoint": "/"},
+    }
+    
+    # Detect framework from name/description
+    detected_framework = None
+    search_text = f"{projectName} {description or ''}".lower()
+    
+    for framework, config in framework_hints.items():
+        if framework in search_text:
+            detected_framework = framework
+            ports = config["ports"]
+            protocol = config["protocol"]
+            health_endpoint = config["health_endpoint"]
+            break
+    else:
+        # Fall back to language-based detection
+        ports = language_ports.get(language or "Unknown", ["8080"])
+        protocol = "http"
+        health_endpoint = "/"
+    
+    # Determine if project is likely container-capable
+    container_indicators = ["docker", "container", "k8s", "kubernetes", "helm"]
+    container_capable = any(indicator in search_text for indicator in container_indicators)
+    
+    # Check if URL indicates it's a web app (for DAST)
+    url_lower = projectUrl.lower()
+    is_web_app = (
+        url_lower.startswith(("http://", "https://")) 
+        and not any(domain in url_lower for domain in ["github.com", "gitlab.com", "bitbucket.org"])
+    )
+    
+    # Build network configuration
+    network_config = {
+        "ports": ports,
+        "protocol": protocol,
+        "health_endpoint": health_endpoint,
+        "startup_time_seconds": 30,
+        "allowed_egress": {
+            "localhost": ports,
+            "127.0.0.1": ports,
+            "external_hosts": []
+        }
+    }
+    
+    # Build allowlists
+    network_allow_hosts = [f"localhost:{port}" for port in ports]
+    network_allow_hosts.extend([f"127.0.0.1:{port}" for port in ports])
+    network_allow_ip_ranges = ["127.0.0.1/32"]
+    
+    result = {
+        "ok": True,
+        "detected_framework": detected_framework,
+        "container_capable": container_capable,
+        "dockerfile_present": False,  # Can't detect without cloning
+        "is_web_app": is_web_app,
+        "network_config": network_config,
+        "network_allow_hosts": network_allow_hosts,
+        "network_allow_ip_ranges": network_allow_ip_ranges,
+        "ports": ports,
+        "recommendations": _generate_network_recommendations(
+            language, detected_framework, container_capable, is_web_app
+        )
+    }
+    
+    return result
+
+
+def _generate_network_recommendations(
+    language: str | None,
+    framework: str | None,
+    container_capable: bool,
+    is_web_app: bool,
+) -> list[str]:
+    """Generate human-readable recommendations for network configuration."""
+    recommendations = []
+    
+    if is_web_app:
+        recommendations.append("Direct web app URL detected - DAST scanning will be enabled automatically")
+    elif container_capable:
+        recommendations.append("Project appears container-capable - consider adding Dockerfile detection")
+    
+    if framework:
+        recommendations.append(f"Detected {framework} framework - using framework-specific defaults")
+    elif language:
+        recommendations.append(f"Using {language} language defaults for port configuration")
+    else:
+        recommendations.append("No language/framework detected - using generic web app ports (8080)")
+    
+    if not is_web_app:
+        recommendations.append("For DAST scanning, ensure the application is running and accessible at the configured ports")
+    
+    return recommendations
+
+
+@mcp.tool
+def enrichProjectWithNetwork(
+    project: dict[str, Any],
+) -> dict:
+    """
+    Enrich a single project dict with intelligent network configuration detection.
+    
+    This tool combines detectNetworkConfig with the existing project data to create
+    a fully enriched project entry suitable for security scanning.
+    
+    Args:
+        project: Project dictionary with at least url, name, and optionally language/description
+        
+    Returns:
+        Enriched project dictionary with network configuration
+    """
+    url = project.get("url", "")
+    name = project.get("name", "")
+    language = project.get("language")
+    description = project.get("description")
+    
+    if not url or not name:
+        return {"ok": False, "error": "Project must have url and name"}
+    
+    # Detect network config
+    network_detection = detectNetworkConfig(url, name, language, description)
+    
+    if not network_detection.get("ok"):
+        return {"ok": False, "error": "Failed to detect network configuration"}
+    
+    # Merge detected config into project
+    enriched = dict(project)
+    enriched["container_capable"] = network_detection["container_capable"]
+    enriched["dockerfile_present"] = network_detection["dockerfile_present"]
+    
+    # Only add network config if it seems like a web app or container-capable
+    if network_detection["is_web_app"] or network_detection["container_capable"]:
+        enriched["network_config"] = network_detection["network_config"]
+        enriched["network_allow_hosts"] = network_detection["network_allow_hosts"]
+        enriched["network_allow_ip_ranges"] = network_detection["network_allow_ip_ranges"]
+        enriched["ports"] = network_detection["ports"]
+    
+    return {
+        "ok": True,
+        "project": enriched,
+        "detection_summary": {
+            "framework": network_detection.get("detected_framework"),
+            "is_web_app": network_detection["is_web_app"],
+            "recommendations": network_detection["recommendations"],
+        }
+    }
+
+
 def main() -> None:
     """Main entry point for MCP server CLI."""
     import os

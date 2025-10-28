@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +41,14 @@ class Project(BaseModel):
         default_factory=list,
         description="Optional list of ports relevant for the project's HTTP services (strings to avoid type issues).",
     )
+    dockerfile_present: bool = Field(
+        default=False,
+        description="Indicates whether a Dockerfile is detected in the project root.",
+    )
+    container_capable: bool = Field(
+        default=False,
+        description="Indicates whether the project can be containerized for DAST scanning.",
+    )
 
     @field_validator("url")
     @classmethod
@@ -50,17 +58,15 @@ class Project(BaseModel):
             # Check if it's a local path
             if v.startswith("/") or Path(v).exists():
                 return v
-            # Try to validate as URL
-            try:
-                HttpUrl(v)
+            # Try to validate as URL - just check format instead of instantiating HttpUrl
+            if v.startswith(("http://", "https://", "git@", "ssh://", "git://", "ftp://")):
                 return v
-            except Exception:
-                # If it's not a valid URL and not a local path, it might still be a relative path
-                # Log warning for potentially invalid URLs
-                logger.warning(
-                    f"URL '{v}' doesn't match expected patterns, allowing for flexibility"
-                )
-                return v
+            # If it's not a valid URL and not a local path, it might still be a relative path
+            # Log warning for potentially invalid URLs
+            logger.warning(
+                f"URL '{v}' doesn't match expected patterns, allowing for flexibility"
+            )
+            return v
         raise ValueError("URL must be a non-empty string")
 
     def __str__(self) -> str:

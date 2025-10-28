@@ -1,0 +1,17 @@
+{
+  "timeouts": {
+    "dast_seconds": 120,
+    "scan_seconds": 600,
+    "runner_seconds": 300
+  },
+  "projects": [
+    {
+      "url": "/var/home/geo/Documents/GeoToolKit/test-scan",
+      "name": "test-scan",
+      "language": "Python",
+      "description": "Local test project with vulnerable code",
+      "dockerfile_present": true,
+      "container_capable": true
+    }
+  ]
+}

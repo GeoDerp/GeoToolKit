@@ -55,6 +55,9 @@ class Workflow:
             project_path_str = url_str
             print(f"Using local path: {project_path_str}")
             try:
+                # Detect Dockerfile in local path
+                Workflow._detect_dockerfile(project, Path(project_path_str))
+                
                 all_findings.extend(
                     Workflow._run_security_scans(
                         project_path_str, project, network_allowlist, timeouts
@@ -87,6 +90,10 @@ class Workflow:
                     )
                     print(f"Repository cloned successfully to {project_path}")
                     print(f"Repository head: {repo.head.commit.hexsha[:8]}")
+                    
+                    # Detect Dockerfile presence
+                    Workflow._detect_dockerfile(project, project_path)
+                    
                     # Run security scans on the cloned repository
                     all_findings.extend(
                         Workflow._run_security_scans(
@@ -201,12 +208,36 @@ class Workflow:
         return all_findings
 
     @staticmethod
+    def _detect_dockerfile(project: Project, project_path: Path | str) -> None:
+        """
+        Detect if a Dockerfile exists in the project root and update project metadata.
+        """
+        project_path = Path(project_path) if isinstance(project_path, str) else project_path
+        dockerfile_variants = ["Dockerfile", "dockerfile", "Dockerfile.dev", "Dockerfile.prod"]
+        
+        for variant in dockerfile_variants:
+            if (project_path / variant).exists():
+                project.dockerfile_present = True
+                project.container_capable = True
+                print(f"✅ Detected {variant} in project root")
+                return
+        
+        print("ℹ️  No Dockerfile detected in project root")
+
+    @staticmethod
     def _should_run_dast_scan(project: Project) -> bool:
         """
         Determine if DAST scanning should be performed for this project.
         DAST is typically only useful for web applications.
+        Now also considers if a Dockerfile is present for containerized DAST scanning.
         """
         url_str = str(project.url).lower()
+        
+        # If Dockerfile is present and container_capable, enable DAST
+        if project.dockerfile_present and project.container_capable:
+            print("ℹ️  Dockerfile detected - DAST scanning enabled for containerized application")
+            return True
+        
         # Skip DAST for GitHub/GitLab/etc URLs (source repositories)
         # If the project explicitly provides network/port info pointing at localhost
         # then it's likely the caller started a local container target for DAST
