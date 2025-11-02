@@ -503,7 +503,19 @@ class ZapRunner:
             response.raise_for_status()
             spider_scan_id = response.json().get("scan", "0")
 
-            spider_seconds = int(os.environ.get("ZAP_SPIDER_TIMEOUT", "120"))
+            # Use passed timeout parameter if provided, otherwise fall back to environment variables
+            # The timeout parameter represents total DAST duration; split between spider and active scan
+            if timeout:
+                # Allocate 25% of total time to spider, 75% to active scan (more time for vulnerability detection)
+                spider_seconds = max(60, int(timeout * 0.25))  # Minimum 60s for spider
+                ascan_seconds = max(180, int(timeout * 0.75))  # Minimum 180s for active scan
+                print(f"Using timeout-based limits: spider={spider_seconds}s, active={ascan_seconds}s (total={timeout}s)")
+            else:
+                # Fall back to environment variables with reasonable defaults
+                spider_seconds = int(os.environ.get("ZAP_SPIDER_TIMEOUT", "120"))
+                ascan_seconds = int(os.environ.get("ZAP_ASCAN_TIMEOUT", "600"))
+                print(f"Using env-based limits: spider={spider_seconds}s, active={ascan_seconds}s")
+
             spider_timeout = time.time() + spider_seconds
             for _attempt in range(max(1, spider_seconds // 1)):
                 if time.time() > spider_timeout:
@@ -532,7 +544,6 @@ class ZapRunner:
             response.raise_for_status()
             ascan_id = response.json().get("scan", "0")
 
-            ascan_seconds = int(os.environ.get("ZAP_ASCAN_TIMEOUT", "600"))
             ascan_timeout = time.time() + ascan_seconds
             for _attempt in range(max(1, ascan_seconds // 1)):
                 if time.time() > ascan_timeout:

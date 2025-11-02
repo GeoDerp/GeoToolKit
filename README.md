@@ -247,7 +247,44 @@ python scripts/validation_executor.py
   - `docker.io/aquasec/trivy`
   - `ghcr.io/ossf/osv-scanner:latest`
   - `ghcr.io/zaproxy/zaproxy:latest`
-- For strictly offline environments, consider mirroring images to a local registry and using Podman’s `--registries-conf`.
+- For strictly offline environments, consider mirroring images to a local registry and using Podman's `--registries-conf`.
+
+#### Podman Hanging or Stuck Containers
+
+If you interrupt a scan (Ctrl+C) or encounter Podman commands hanging:
+
+1. **Check for stuck processes:**
+   ```bash
+   ps aux | grep podman | grep -v grep
+   ```
+
+2. **Kill stuck Podman processes:**
+   ```bash
+   # Kill any hanging podman commands
+   pkill -9 podman
+   ```
+
+3. **Restart Podman socket:**
+   ```bash
+   systemctl --user restart podman.socket
+   ```
+
+4. **Clean up containers:**
+   ```bash
+   # Remove stopped containers
+   podman container prune -f
+   
+   # Remove all containers (if safe to do so)
+   podman rm -f $(podman ps -aq)
+   ```
+
+5. **Verify Podman is working:**
+   ```bash
+   podman ps
+   podman version
+   ```
+
+**Prevention:** Always allow scans to complete gracefully. The ZAP runner includes timeout protection (configurable via `ZAP_SPIDER_TIMEOUT`, `ZAP_ASCAN_TIMEOUT`, and `ZAP_READY_TIMEOUT` environment variables) to prevent infinite hangs.
 
 3. **View the results**: Open `security-report.md` in your favorite editor
 
@@ -327,6 +364,120 @@ export ZAP_READY_TIMEOUT=300    # seconds (default used by toolkit)
 
 Security note: Host networking is intentionally avoided by default. Explicitly opt into networked modes only when required and understood.
 
+## 📚 Offline Artifacts (Trivy & OSV)
+
+For air-gapped or restricted CI environments, GeoToolKit can operate fully offline using pre-generated artifact bundles. This eliminates network dependencies and significantly speeds up scan execution.
+
+### Quick Setup (Recommended)
+
+1. **Generate artifacts** on a networked host:
+
+```bash
+bash scripts/prepare_offline_artifacts.sh data/offline-artifacts
+```
+
+This creates:
+- `trivy-cache.tgz` - Trivy vulnerability database (~75-80 MB)
+- `osv_offline.db` - OSV vulnerability database (if available)
+
+2. **Extract and configure** in your GeoToolKit workspace:
+
+```bash
+# Extract Trivy cache
+mkdir -p data/trivy-cache
+tar -xzf data/offline-artifacts/trivy-cache.tgz -C data/trivy-cache
+
+# Move OSV database (if available)
+mv data/offline-artifacts/osv_offline.db data/osv_offline.db
+```
+
+3. **Set environment variables** (already configured in `run_production_test.sh`):
+
+```bash
+# Trivy offline mode
+export TRIVY_CACHE_DIR="$(pwd)/data/trivy-cache"
+export GEOTOOLKIT_TRIVY_OFFLINE=1
+
+# OSV offline mode (if database available)
+export GEOTOOLKIT_OSV_OFFLINE=1
+export GEOTOOLKIT_OSV_OFFLINE_DB="$(pwd)/data/osv_offline.db"
+```
+
+4. **Run scans** - GeoToolKit will automatically use offline databases:
+
+```bash
+bash run_production_test.sh
+# Or directly:
+python -m src.main --input projects.json --output report.md --database-path data/offline-db.tar.gz
+```
+
+### CI/CD Integration
+
+For CI environments, upload artifacts to your CI storage and extract before scanning:
+
+```bash
+# In your CI pipeline (e.g., GitHub Actions, GitLab CI)
+mkdir -p /workspace/trivy-cache
+tar -xzf trivy-cache.tgz -C /workspace/trivy-cache
+
+export TRIVY_CACHE_DIR=/workspace/trivy-cache
+export GEOTOOLKIT_TRIVY_OFFLINE=1
+
+# If OSV database available:
+export GEOTOOLKIT_OSV_OFFLINE=1
+export GEOTOOLKIT_OSV_OFFLINE_DB=/workspace/osv/osv_offline.db
+```
+
+### Verification
+
+Confirm your offline setup is working correctly:
+
+```bash
+# Check Trivy cache structure
+ls -lh data/trivy-cache/db/
+# Should show: trivy.db (~780 MB) and metadata.json
+
+# Check OSV database (optional)
+ls -lh data/osv_offline.db
+```
+
+### Benefits
+
+- **No network access required** - Scans work in fully air-gapped environments
+- **Faster execution** - No database downloads during scans (saves ~5-10 seconds per project)
+- **Predictable results** - Same vulnerability data across all runs until you update artifacts
+- **Reduced failures** - No network timeouts or registry access issues
+
+### Updating Artifacts
+
+Regenerate artifacts periodically (weekly/monthly) to get latest vulnerability data:
+
+```bash
+# On networked host
+bash scripts/prepare_offline_artifacts.sh data/offline-artifacts
+
+# Distribute updated artifacts to your CI/development environments
+```
+
+### Troubleshooting
+
+**Trivy complains about missing database:**
+- Verify `data/trivy-cache/db/trivy.db` and `data/trivy-cache/db/metadata.json` exist
+- Ensure `TRIVY_CACHE_DIR` points to the extracted cache directory (not the .tgz file)
+- Check file permissions - Trivy needs read access to cache files
+
+**OSV Scanner skips scanning:**
+- This is expected if `data/osv_offline.db` doesn't exist
+- OSV artifact generation requires specific OSV Scanner versions - check `scripts/prepare_offline_artifacts.sh` output
+- You can still get SCA coverage from Trivy without OSV
+
+**Performance still slow:**
+- Verify environment variables are set correctly before running scans
+- Check that large repos aren't being cloned repeatedly (use local paths if testing)
+- Consider using `validation/configs/production-mcp-projects.json` instead of full `production-projects.json` for faster iteration
+
+For detailed offline operation documentation, see `docs/OFFLINE.md`.
+
 ## 📚 Offline Database Setup
 
 For optimal security and performance in air-gapped environments, GeoToolKit supports offline vulnerability databases.
@@ -362,48 +513,6 @@ For manual database configuration:
 
 3. **GitHub Security Advisories**
    - Download: [https://github.com/advisories](https://github.com/advisories)
-
-### Troubleshooting
-
-- If containers fail to start, ensure Podman is installed and seccomp profiles exist at `seccomp/*.json`
-- For corporate networks with blocked image pulls, pre-pull required images:
-  - `docker.io/semgrep/semgrep`
-  - `docker.io/aquasec/trivy`
-  - `ghcr.io/ossf/osv-scanner:latest`
-  - `docker.io/owasp/zap2docker-stable:latest`
-- For strictly offline environments, consider mirroring images to a local registry
-
-## Offline Artifacts (Trivy & OSV)
-
-If you must run GeoToolKit in air-gapped or restricted CI, prepare offline artifacts on a networked machine and upload them to your CI runner.
-
-- Quick script (automates both artifacts): `scripts/prepare_offline_artifacts.sh`
-- Detailed documentation: `docs/OFFLINE.md`
-
-Quick steps summary:
-
-1. On a networked host, run:
-
-```bash
-./scripts/prepare_offline_artifacts.sh ./offline-artifacts
-```
-
-2. Upload the produced files (`trivy-cache.tgz` and, if produced, `osv_offline.db`) to your CI storage.
-
-3. In CI, extract and set env vars before running GeoToolKit:
-
-```bash
-mkdir -p /workspace/trivy-cache
-tar -xzf trivy-cache.tgz -C /workspace/trivy-cache
-export TRIVY_CACHE_DIR=/workspace/trivy-cache
-export GEOTOOLKIT_TRIVY_OFFLINE=1
-
-# If you have an OSV DB:
-export GEOTOOLKIT_OSV_OFFLINE=1
-export GEOTOOLKIT_OSV_OFFLINE_DB=/workspace/osv/osv_offline.db
-```
-
-Use the script and docs for more details and troubleshooting tips.
 
 ## 🛠️ Development
 

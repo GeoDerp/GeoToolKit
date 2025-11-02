@@ -75,9 +75,7 @@ class TrivyRunner:
         inner_args = [scan_type, "--format", "json"]
         if trivy_cache_dir:
             inner_args += ["--cache-dir", "/root/.cache/trivy"]
-            # Only pass --skip-db-update if the provided cache directory
-            # appears to contain Trivy data (non-empty). On a first-run
-            # empty cache, Trivy will fail when --skip-db-update is used.
+            # Check if the provided cache directory contains Trivy data
             try:
                 p = Path(trivy_cache_dir).expanduser()
                 # Resolve relative paths to absolute when possible
@@ -93,6 +91,7 @@ class TrivyRunner:
                     metadata = db_dir / "metadata.json"
                     if trivy_db.exists() and trivy_db.is_file() and trivy_db.stat().st_size > 1024 and metadata.exists() and metadata.is_file() and metadata.stat().st_size > 0:
                         non_empty = True
+                        print(f"Trivy cache present: DB={trivy_db.stat().st_size} bytes")
                     else:
                         # Fallback: any files present
                         for _ in p.rglob("*"):
@@ -107,12 +106,14 @@ class TrivyRunner:
             if trivy_offline and str(trivy_offline).lower() in ("1", "true", "yes") and not non_empty:
                 print("Trivy offline requested but cache dir appears empty; skipping Trivy to avoid downloads.")
                 return []
-            # Note: do not automatically pass --skip-db-update. In practice
-            # Trivy can fail with "--skip-db-update cannot be specified on the
-            # first run" even when a cache is present (format/version mismatch).
-            # We mount the cache and allow Trivy to use it; when offline mode is
-            # explicitly requested and Trivy fails, the runner will treat the
-            # failure as an empty result rather than crashing the pipeline.
+            # Do NOT add --skip-db-update here. Trivy has complex "first run" logic that
+            # makes --skip-db-update fail even when a cache exists. Instead:
+            # 1. Mount the cache (done above via mounts)
+            # 2. Let Trivy try to use it
+            # 3. If Trivy fails trying to download (offline env), catch the error and return []
+            #
+            # This approach allows Trivy to work when network is available (for updates)
+            # while gracefully failing in offline environments.
         inner_args += ["/src"]
 
         try:
