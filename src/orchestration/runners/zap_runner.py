@@ -493,36 +493,69 @@ class ZapRunner:
 
             # Spider the target URL
             print(f"Spidering target: {mapped_target_url}")
+            
+            # Check if spider add-on is available before attempting scan
+            try:
+                components_response = requests.get(
+                    f"{zap_base_url}/JSON/core/view/componentList/", timeout=10
+                )
+                components_response.raise_for_status()
+                components = components_response.json()
+                has_spider = any(
+                    "spider" in str(comp).lower() 
+                    for comp in components.get("componentList", [])
+                )
+                if not has_spider:
+                    print("Warning: Spider component not found in ZAP componentList")
+                    print("Available components:", components.get("componentList", []))
+            except Exception as e:
+                print(f"Warning: Could not check ZAP components: {e}")
+            
+            # Try to start spider scan
             spider_url = f"{zap_base_url}/JSON/spider/action/scan/"
             spider_params = {
                 "url": mapped_target_url,
                 "maxChildren": "10",
                 "recurse": "true",
             }
-            response = requests.get(spider_url, params=spider_params, timeout=30)
-            response.raise_for_status()
-            spider_scan_id = response.json().get("scan", "0")
+            
+            try:
+                response = requests.get(spider_url, params=spider_params, timeout=30)
+                response.raise_for_status()
+                spider_scan_id = response.json().get("scan", "0")
+            except requests.exceptions.HTTPError as e:
+                if e.response and e.response.status_code == 404:
+                    # Spider add-on might not be available or API changed
+                    print(f"Spider API returned 404 - add-on may not be loaded. Skipping spider phase.")
+                    print(f"You can manually install spider add-on in ZAP or use a different ZAP image.")
+                    spider_scan_id = None
+                else:
+                    raise
+            
+            # If spider started successfully, wait for completion
+            if spider_scan_id is not None:
+                spider_seconds = int(os.environ.get("ZAP_SPIDER_TIMEOUT", "120"))
+                spider_timeout = time.time() + spider_seconds
+                for _attempt in range(max(1, spider_seconds // 1)):
+                    if time.time() > spider_timeout:
+                        print("Spider scan timeout reached, continuing with active scan")
+                        break
 
-            spider_seconds = int(os.environ.get("ZAP_SPIDER_TIMEOUT", "120"))
-            spider_timeout = time.time() + spider_seconds
-            for _attempt in range(max(1, spider_seconds // 1)):
-                if time.time() > spider_timeout:
-                    print("Spider scan timeout reached, continuing with active scan")
-                    break
-
-                status_response = requests.get(
-                    f"{zap_base_url}/JSON/spider/view/status/",
-                    params={"scanId": spider_scan_id},
-                    timeout=10,
-                )
-                try:
-                    status = int(status_response.json().get("status", "100"))
-                except Exception:
-                    status = 100
-                if status >= 100:
-                    print("Spidering complete.")
-                    break
-                time.sleep(1)
+                    status_response = requests.get(
+                        f"{zap_base_url}/JSON/spider/view/status/",
+                        params={"scanId": spider_scan_id},
+                        timeout=10,
+                    )
+                    try:
+                        status = int(status_response.json().get("status", "100"))
+                    except Exception:
+                        status = 100
+                    if status >= 100:
+                        print("Spidering complete.")
+                        break
+                    time.sleep(1)
+            else:
+                print("Skipped spider phase, proceeding directly to active scan")
 
             # Active scan
             print(f"Active scanning target: {mapped_target_url}")

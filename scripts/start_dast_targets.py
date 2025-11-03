@@ -9,6 +9,7 @@ import subprocess
 import sys
 import time
 from typing import Any
+from pathlib import Path
 
 import requests
 
@@ -31,12 +32,12 @@ class DastTargetManager:
             sys.exit(1)
 
     def run_command(
-        self, cmd: list[str], capture_output: bool = True
+        self, cmd: list[str], capture_output: bool = True, **kwargs
     ) -> subprocess.CompletedProcess:
         """Run a shell command and return the result"""
         try:
             result = subprocess.run(
-                cmd, capture_output=capture_output, text=True, check=False
+                cmd, capture_output=capture_output, text=True, check=False, **kwargs
             )
             return result
         except Exception as e:
@@ -81,52 +82,46 @@ class DastTargetManager:
     def build_container(self, project: dict[str, Any]) -> bool:
         """Build container for a project"""
         project_name = project["name"]
-        project_url = project["url"]
+        project_path = project.get("path")
+        dockerfile = project.get("dockerfile", "Dockerfile")
 
-        print(f"🔨 Building container for {project_name}")
+        if not project_path:
+            print(f"⚠️  Skipping {project_name}: 'path' not defined in config")
+            return False
 
-        # For this simulation, we'll use pre-built images where available
-        # In a real scenario, you'd clone the repo and build from source
+        print(f"🔨 Building container for {project_name} from {project_path}")
+        build_context = str(Path(self.container_projects_file).parent / project_path)
+        dockerfile_path = str(Path(build_context) / dockerfile)
 
-        known_images = {
-            "juice-shop": "bkimminich/juice-shop:latest",
-            "httpbin": "kennethreitz/httpbin:latest",
-            "gin": "golang:1.21-alpine",  # Would build custom image
-            "spring-boot": "openjdk:17-jdk-alpine",  # Would build custom image
-        }
+        if not Path(dockerfile_path).exists():
+            print(f"❌ Dockerfile not found at {dockerfile_path}")
+            return False
 
-        if project_name in known_images:
-            # Pull existing image
-            result = self.run_command(["podman", "pull", known_images[project_name]])
+        image_tag = f"{project_name}:test"
+        cmd = [
+            "podman",
+            "build",
+            "-t",
+            image_tag,
+            "-f",
+            dockerfile_path,
+            build_context,
+        ]
 
-            if result.returncode == 0:
-                # Tag with our naming convention
-                self.run_command(
-                    [
-                        "podman",
-                        "tag",
-                        known_images[project_name],
-                        f"{project_name}:test",
-                    ]
-                )
-                print(f"✅ Container ready: {project_name}:test")
-                return True
-            else:
-                print(f"❌ Failed to pull image for {project_name}: {result.stderr}")
-                return False
+        result = self.run_command(cmd, capture_output=False)  # Stream output
+
+        if result.returncode == 0:
+            print(f"✅ Container image built: {image_tag}")
+            return True
         else:
-            print(
-                f"⚠️  No pre-built image for {project_name}, would need to clone and build"
-            )
-            print(f"   Repository: {project_url}")
+            print(f"❌ Failed to build image for {project_name}")
             return False
 
     def start_container(self, project: dict[str, Any]) -> bool:
         """Start a container for DAST target"""
         project_name = project["name"]
-        network_config = project.get("network_config", {})
-        ports = network_config.get("ports", ["8080"])
-        primary_port = ports[0]
+        primary_port = str(project.get("port", "8080"))
+        ports = [primary_port]
 
         container_name = f"{project_name}-dast-target"
 
@@ -159,7 +154,7 @@ class DastTargetManager:
             print(f"✅ Container started: {container_name}")
 
             # Wait for startup
-            startup_time = network_config.get("startup_time_seconds", 30)
+            startup_time = project.get("startup_time_seconds", 30)
             print(f"⏱️  Waiting {startup_time}s for container startup...")
             time.sleep(startup_time)
 
@@ -171,10 +166,8 @@ class DastTargetManager:
     def check_health(self, project: dict[str, Any]) -> bool:
         """Check if container target is healthy and responding"""
         project_name = project["name"]
-        network_config = project.get("network_config", {})
-        ports = network_config.get("ports", ["8080"])
-        health_endpoint = network_config.get("health_endpoint", "/")
-        primary_port = ports[0]
+        primary_port = str(project.get("port", "8080"))
+        health_endpoint = project.get("health_endpoint", "/")
 
         health_url = f"http://127.0.0.1:{primary_port}{health_endpoint}"
 
@@ -230,10 +223,7 @@ class DastTargetManager:
         healthy_targets = []
 
         for project in self.projects_data.get("projects", []):
-            if not project.get("container_capable"):
-                continue
-
-            print(f"\n📋 Processing {project['name']} ({project['language']})")
+            print(f"\n📋 Processing {project['name']}")
 
             # Build container
             if not self.build_container(project):
