@@ -209,12 +209,80 @@
       ],
       "network_config": null
     }
+    ,
+    {
+      "url": "https://github.com/tiangolo/fastapi",
+      "name": "fastapi",
+      "language": "Python",
+      "description": "High performance Python framework",
+      "container_capable": true,
+      "dockerfile_present": false,
+      "package_managers": [
+        "pip",
+        "poetry"
+      ],
+      "network_config": {
+        "ports": ["8000"],
+        "protocol": "http",
+        "health_endpoint": "/docs",
+        "startup_time_seconds": 20,
+        "allowed_egress": {
+          "localhost": ["8000"],
+          "external_hosts": []
+        }
+      }
+    },
+    {
+      "url": "https://github.com/pallets/flask",
+      "name": "flask",
+      "language": "Python",
+      "description": "A simple framework for building complex web applications",
+      "container_capable": true,
+      "dockerfile_present": false,
+      "package_managers": [
+        "pip",
+        "requirements.txt"
+      ],
+      "network_config": {
+        "ports": ["5000"],
+        "protocol": "http",
+        "health_endpoint": "/",
+        "startup_time_seconds": 15,
+        "allowed_egress": {
+          "localhost": ["5000"],
+          "external_hosts": []
+        }
+      }
+    },
+    {
+      "url": "https://github.com/nodejs/node",
+      "name": "node",
+      "language": "JavaScript",
+      "description": "Node.js JavaScript runtime",
+      "container_capable": true,
+      "dockerfile_present": false,
+      "package_managers": [
+        "npm",
+        "yarn"
+      ],
+      "network_config": null
+    },
+    {
+      "url": "https://github.com/golang/go",
+      "name": "go",
+      "language": "Go",
+      "description": "The Go programming language",
+      "container_capable": false,
+      "dockerfile_present": false,
+      "package_managers": ["go.mod"],
+      "network_config": null
+    }
   ],
   "metadata": {
-    "created_date": "2025-09-26",
-    "total_projects": 10,
-    "languages_covered": 10,
-    "container_capable_count": 5,
+    "created_date": "2025-10-19",
+    "total_projects": 14,
+    "languages_covered": 11,
+    "container_capable_count": 8,
     "validation_plan": "real-world-end-to-end",
     "enriched": true
   }

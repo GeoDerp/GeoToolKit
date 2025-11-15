@@ -91,6 +91,14 @@ include = [
     "mcp_server/manifest.json",
     "mcp_server/README.md",
     "tests",
+    "seccomp/trivy-seccomp.json",
+    "seccomp/osv-scanner-seccomp.json",
+]
+
+[tool.hatch.build.targets.wheel]
+include = [
+    "seccomp/trivy-seccomp.json",
+    "seccomp/osv-scanner-seccomp.json",
 ]
 
 [tool.hatch.envs.default]

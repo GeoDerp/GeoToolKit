@@ -55,6 +55,9 @@ class Workflow:
             project_path_str = url_str
             print(f"Using local path: {project_path_str}")
             try:
+                # Detect Dockerfile in local path
+                Workflow._detect_dockerfile(project, Path(project_path_str))
+                
                 all_findings.extend(
                     Workflow._run_security_scans(
                         project_path_str, project, network_allowlist, timeouts
@@ -87,6 +90,10 @@ class Workflow:
                     )
                     print(f"Repository cloned successfully to {project_path}")
                     print(f"Repository head: {repo.head.commit.hexsha[:8]}")
+                    
+                    # Detect Dockerfile presence
+                    Workflow._detect_dockerfile(project, project_path)
+                    
                     # Run security scans on the cloned repository
                     all_findings.extend(
                         Workflow._run_security_scans(
@@ -128,8 +135,11 @@ class Workflow:
                 semgrep_findings = SemgrepRunner.run_scan(
                     project_path, timeout=runner_timeout
                 )
-                all_findings.extend(semgrep_findings)
-                print(f"✅ Semgrep found {len(semgrep_findings)} findings.")
+                if semgrep_findings is None:
+                    print("❌ Semgrep scan failed (runner error)")
+                else:
+                    all_findings.extend(semgrep_findings)
+                    print(f"✅ Semgrep found {len(semgrep_findings)} findings.")
             except Exception as e:
                 print(f"❌ Semgrep scan failed: {e}")
 
@@ -139,8 +149,11 @@ class Workflow:
                 trivy_findings = TrivyRunner.run_scan(
                     project_path, scan_type="fs", timeout=runner_timeout
                 )
-                all_findings.extend(trivy_findings)
-                print(f"✅ Trivy found {len(trivy_findings)} findings.")
+                if trivy_findings is None:
+                    print("❌ Trivy scan failed (runner error)")
+                else:
+                    all_findings.extend(trivy_findings)
+                    print(f"✅ Trivy found {len(trivy_findings)} findings.")
             except Exception as e:
                 print(f"❌ Trivy scan failed: {e}")
 
@@ -148,8 +161,11 @@ class Workflow:
             print("🔍 Running OSV-Scanner (SCA)...")
             try:
                 osv_findings = OSVRunner.run_scan(project_path, timeout=runner_timeout)
-                all_findings.extend(osv_findings)
-                print(f"✅ OSV-Scanner found {len(osv_findings)} findings.")
+                if osv_findings is None:
+                    print("❌ OSV-Scanner scan failed (runner error)")
+                else:
+                    all_findings.extend(osv_findings)
+                    print(f"✅ OSV-Scanner found {len(osv_findings)} findings.")
             except Exception as e:
                 print(f"❌ OSV-Scanner scan failed: {e}")
 
@@ -158,13 +174,27 @@ class Workflow:
                 print("🔍 Running OWASP ZAP (DAST)...")
                 dast_timeout = timeouts.get("dast_seconds") if timeouts else None
                 try:
-                    zap_findings = ZapRunner.run_scan(
-                        str(project.url),
-                        network_allowlist=network_allowlist,
-                        timeout=dast_timeout,
-                    )
-                    all_findings.extend(zap_findings)
-                    print(f"✅ OWASP ZAP found {len(zap_findings)} findings.")
+                    targets = Workflow._resolve_dast_targets(project)
+                    if not targets:
+                        print("ℹ️  No reachable DAST targets were configured; skipping.")
+                    for target in targets:
+                        # Pass the project's own network allowlist (if present) to ZAP
+                        proj_allow = getattr(project, "network_allow_hosts", None)
+                        proj_ip_ranges = getattr(project, "network_allow_ip_ranges", None)
+                        proj_ports = getattr(project, "ports", None)
+                        zap_findings = ZapRunner.run_scan(
+                            target,
+                            network_allowlist={
+                                "hosts": proj_allow,
+                                "ip_ranges": proj_ip_ranges,
+                                "ports": proj_ports,
+                            },
+                            timeout=dast_timeout,
+                        )
+                        all_findings.extend(zap_findings)
+                        print(
+                            f"✅ OWASP ZAP found {len(zap_findings)} findings against {target}."
+                        )
                 except Exception as e:
                     print(f"❌ OWASP ZAP scan failed: {e}")
             else:
@@ -184,13 +214,56 @@ class Workflow:
         return all_findings
 
     @staticmethod
+    def _detect_dockerfile(project: Project, project_path: Path | str) -> None:
+        """
+        Detect if a Dockerfile exists in the project root and update project metadata.
+        """
+        project_path = Path(project_path) if isinstance(project_path, str) else project_path
+        dockerfile_variants = ["Dockerfile", "dockerfile", "Dockerfile.dev", "Dockerfile.prod"]
+        
+        for variant in dockerfile_variants:
+            if (project_path / variant).exists():
+                project.dockerfile_present = True
+                project.container_capable = True
+                print(f"✅ Detected {variant} in project root")
+                return
+        
+        print("ℹ️  No Dockerfile detected in project root")
+
+    @staticmethod
     def _should_run_dast_scan(project: Project) -> bool:
         """
         Determine if DAST scanning should be performed for this project.
         DAST is typically only useful for web applications.
+        Now also considers if a Dockerfile is present for containerized DAST scanning.
         """
         url_str = str(project.url).lower()
+
+        # If explicit targets are configured, honor them regardless of repository host
+        dast_targets = getattr(project, "dast_targets", []) or []
+        if dast_targets:
+            return True
+        
+        # If Dockerfile is present and container_capable, enable DAST
+        if project.dockerfile_present and project.container_capable:
+            print("ℹ️  Dockerfile detected - DAST scanning enabled for containerized application")
+            return True
+        
         # Skip DAST for GitHub/GitLab/etc URLs (source repositories)
+        # If the project explicitly provides network/port info pointing at localhost
+        # then it's likely the caller started a local container target for DAST
+        # (validation/configs/container-projects.json). In that case allow DAST
+        # even when the URL is a source repo.
+        try:
+            ports = getattr(project, "ports", []) or []
+            allow_hosts = getattr(project, "network_allow_hosts", []) or []
+            # If ports are present and allow_hosts include localhost/127.0.0.1,
+            # assume the intent is to run DAST against a running local target.
+            if ports and any(h.startswith("127.0.0.1") or h.startswith("localhost") for h in allow_hosts):
+                return True
+        except Exception:
+            pass
+
         if any(
             domain in url_str
             for domain in ["github.com", "gitlab.com", "bitbucket.org"]
@@ -203,3 +276,17 @@ class Workflow:
         ):
             return True
         return False
+
+    @staticmethod
+    def _resolve_dast_targets(project: Project) -> list[str]:
+        """Return concrete HTTP(S) URLs for DAST scans if available."""
+        explicit = [t for t in getattr(project, "dast_targets", []) or [] if t]
+        if explicit:
+            return explicit
+
+        url_str = str(project.url).strip()
+        if url_str.startswith(("http://", "https://")) and not any(
+            domain in url_str.lower() for domain in ["github.com", "gitlab.com", "bitbucket.org"]
+        ):
+            return [url_str]
+        return []

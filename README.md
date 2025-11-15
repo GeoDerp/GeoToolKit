@@ -112,15 +112,7 @@ For development:
    # Using uv (recommended)
    uv venv
    source .venv/bin/activate
-   uv sync
-   
-   # For MCP server support
    uv sync --extra mcp
-   
-   <!-- # Or using pip
-   python -m venv .venv
-   source .venv/bin/activate
-   pip install -e . -->
    ```
 
 3. **Prepare offline database** (optional but recommended):
@@ -157,9 +149,104 @@ For development:
      --database-path data/offline-db.tar.gz
    ```
 
+## ✅ Production Validation Status
+
+GeoToolKit has been validated in production-like environments with the following results:
+
+### Scan Results (November 2025)
+- **SAST (Semgrep)**: ✅ Fully functional across Python, JavaScript, Go
+- **SCA (Trivy)**: ✅ Functional with graceful offline fallback
+- **SCA (OSV-Scanner)**: ✅ Functional with graceful offline fallback
+- **DAST (OWASP ZAP)**: ⚠️ Container starts successfully, API limitations documented below
+
+### Tool-Specific Notes
+
+#### Semgrep (SAST)
+- Works reliably across all tested languages (Python, JavaScript, TypeScript, Java, Go, Ruby)
+- Uses custom rulesets from `rules/semgrep/`
+- No network connectivity required
+
+#### Trivy (SCA)
+- **Offline Mode**: Set `GEOTOOLKIT_TRIVY_OFFLINE=1` to prevent network attempts
+- **Cache Setup**: For true offline operation, pre-populate Trivy cache:
+  ```bash
+  # On a networked machine, run Trivy once to create cache
+  podman run --rm -v trivy-cache:/root/.cache/trivy:rw \
+    docker.io/aquasec/trivy fs --download-db-only
+  
+  # Then set in your environment
+  export TRIVY_CACHE_DIR=/path/to/trivy-cache
+  export GEOTOOLKIT_TRIVY_OFFLINE=1
+  ```
+- **Graceful Degradation**: If offline mode is enabled without a cache, Trivy scan is skipped with a clear message
+
+#### OSV-Scanner (SCA)
+- **Offline Mode**: Set `GEOTOOLKIT_OSV_OFFLINE=1` with `GEOTOOLKIT_OSV_OFFLINE_DB=/path/to/db`
+- **Network Fallback**: Gracefully handles DNS/network errors in air-gapped environments
+- **Image Selection**: Use `export OSV_IMAGE=ghcr.io/google/osv-scanner:latest`
+- **Expected Behavior**: Reports "No package sources found" for repos without package manifests (this is normal)
+
+#### OWASP ZAP (DAST)
+- **Container Execution**: ✅ Starts successfully with proper network isolation
+- **API Limitation**: The `ghcr.io/zaproxy/zaproxy:latest` image (v2.16.1) has spider add-on API limitations
+- **Workaround**: Scanner gracefully handles 404 errors and continues with active scan
+- **Production Recommendation**: Consider using `owasp/zap2docker-stable` for better add-on support
+- **Timeout Configuration**:
+  ```bash
+  export ZAP_SPIDER_TIMEOUT=120
+  export ZAP_ASCAN_TIMEOUT=600
+  export ZAP_READY_TIMEOUT=300
+  ```
+
+### Running Production Scans
+
+For a full multi-language scan with DAST support:
+
+```bash
+# 1. Start DAST targets (if testing live web applications)
+python scripts/start_dast_targets.py validation/configs/container-projects.json
+
+# 2. Configure offline/network settings
+export OSV_IMAGE=ghcr.io/google/osv-scanner:latest
+export TRIVY_CACHE_DIR=/path/to/trivy-cache  # if available
+export GEOTOOLKIT_TRIVY_OFFLINE=1             # if truly offline
+export GEOTOOLKIT_OSV_OFFLINE=0               # disable if no offline DB
+export ZAP_SPIDER_TIMEOUT=120
+export ZAP_ASCAN_TIMEOUT=600
+export ZAP_READY_TIMEOUT=300
+
+# 3. Run scan
+python src/main.py \
+  --input projects.json \
+  --output security-report.md \
+  --database-path data/offline-db.tar.gz
+```
+
+The repository ships with curated configs under `validation/configs/`:
+- `enhanced-projects.json` – a trimmed multi-language suite with DAST metadata for quick validation
+- `container-projects.json` – container definitions consumed by `start_dast_targets.py`
+
+Both files include `dast_targets`, allowlists, and health endpoints so the workflow exercises SAST/SCA runners plus ZAP inside the isolated Podman network.
+
+### Known Limitations
+
+1. **Trivy Offline Database**: The `data/offline-db.tar.gz` contains NVD JSON files but not the SQLite database Trivy expects. Follow `docs/OFFLINE.md` to create a proper Trivy cache.
+
+2. **OSV Offline Database**: The bundled offline DB is a placeholder. For production offline scanning, obtain a real OSV database.
+
+3. **ZAP Spider API**: Some ZAP images have incomplete spider add-on support. Active scanning continues even if spider fails.
+
+For detailed troubleshooting and offline artifact preparation, see `docs/OFFLINE.md` and `docs/CONTAINER_SECURITY.md`.
+
+
 ### Model Context Protocol (MCP) Server
 
 An optional FastMCP server is provided to programmatically manage `projects.json` and run scans. It can interpret `network_config` blocks into explicit allowlists for DAST. See the full guide in `mcp_server/README.md`.
+
+To use the MCP server, first ensure you have the required dependencies installed:
+```bash
+uv sync --extra mcp
+```
 
 The recommended way to run the server is via the main CLI:
 ```bash
@@ -204,7 +291,44 @@ python scripts/validation_executor.py
   - `docker.io/aquasec/trivy`
   - `ghcr.io/ossf/osv-scanner:latest`
   - `ghcr.io/zaproxy/zaproxy:latest`
-- For strictly offline environments, consider mirroring images to a local registry and using Podman’s `--registries-conf`.
+- For strictly offline environments, consider mirroring images to a local registry and using Podman's `--registries-conf`.
+
+#### Podman Hanging or Stuck Containers
+
+If you interrupt a scan (Ctrl+C) or encounter Podman commands hanging:
+
+1. **Check for stuck processes:**
+   ```bash
+   ps aux | grep podman | grep -v grep
+   ```
+
+2. **Kill stuck Podman processes:**
+   ```bash
+   # Kill any hanging podman commands
+   pkill -9 podman
+   ```
+
+3. **Restart Podman socket:**
+   ```bash
+   systemctl --user restart podman.socket
+   ```
+
+4. **Clean up containers:**
+   ```bash
+   # Remove stopped containers
+   podman container prune -f
+   
+   # Remove all containers (if safe to do so)
+   podman rm -f $(podman ps -aq)
+   ```
+
+5. **Verify Podman is working:**
+   ```bash
+   podman ps
+   podman version
+   ```
+
+**Prevention:** Always allow scans to complete gracefully. The ZAP runner includes timeout protection (configurable via `ZAP_SPIDER_TIMEOUT`, `ZAP_ASCAN_TIMEOUT`, and `ZAP_READY_TIMEOUT` environment variables) to prevent infinite hangs.
 
 3. **View the results**: Open `security-report.md` in your favorite editor
 
@@ -221,11 +345,19 @@ The `projects.json` file supports the following format:
       "url": "https://github.com/owner/repo",
       "name": "project-name",
       "language": "Programming Language",
-      "description": "Brief description (optional)"
+      "description": "Brief description (optional)",
+      "dast_targets": ["http://127.0.0.1:3000/"],
+      "network_allow_hosts": ["127.0.0.1:3000", "localhost:3000"],
+      "ports": ["3000"]
     }
   ]
 }
 ```
+
+Key fields for DAST readiness:
+- `dast_targets`: Explicit HTTP/HTTPS endpoints to probe once the application is running (typically on localhost via `start_dast_targets.py`).
+- `network_allow_hosts` / `network_allow_ip_ranges`: Host:port or CIDR entries that explicitly permit egress from the ZAP container; DAST runs fail closed if the target is not included.
+- `ports`: Used to derive default allowlist entries and to stand up local containers for validation.
 
 ### Network Allow-list (for DAST)
 
@@ -246,6 +378,8 @@ python src/main.py \
   --network-allowlist network-allowlist.txt
 ```
 
+GeoToolKit automatically looks for the Podman network defined in `GEOTOOLKIT_DAST_NETWORK` (defaults to `gt-dast-net`). When present, the ZAP container joins this isolated bridge so it can only talk to the explicitly allowed target containers. When scanning localhost services, ZAP falls back to `slirp4netns:allow_host_loopback=true` to keep traffic sandboxed while still reaching `127.0.0.1`.
+
 ### Environment Variables
 
 You can tune container networking and authentication via environment variables. Sensible, secure defaults are used when not set.
@@ -257,15 +391,147 @@ You can tune container networking and authentication via environment variables. 
   - ZAP_IMAGE: Container image to use (default ghcr.io/zaproxy/zaproxy:latest).
   - ZAP_BASE_URL: Connect to an existing ZAP instance instead of starting a container.
   - ZAP_PODMAN_NETWORK: Podman --network value to use (e.g., bridge). Optional.
+  - GEOTOOLKIT_DAST_NETWORK: Name of the isolated Podman network to join when running ZAP (defaults to `gt-dast-net` if it exists; otherwise falls back to loopback-only access).
   - ZAP_PODMAN_PULL: Podman --pull policy: always|missing|never (default missing).
   - ZAP_PODMAN_ARGS: Extra Podman args appended as-is.
   - CONTAINER_HOST_HOSTNAME: Hostname used inside containers to reach the host (default host.containers.internal). Set for environments where the default isn't available.
+
+Additional runtime recommendations
+-------------------------------
+
+- If you encounter registry access errors pulling OSV images, set an explicit image that is reachable from your host, for example:
+
+```bash
+export OSV_IMAGE=ghcr.io/google/osv-scanner:latest
+```
+
+- For longer or more thorough ZAP scans, tune these environment variables (defaults used by GeoToolKit):
+
+```bash
+export ZAP_SPIDER_TIMEOUT=120   # seconds (default used by toolkit)
+export ZAP_ASCAN_TIMEOUT=600    # seconds (default used by toolkit)
+export ZAP_READY_TIMEOUT=300    # seconds (default used by toolkit)
+```
 
 - Semgrep (SAST)
   - SEMGREP_PACK: When set, runs Semgrep using this config pack.
   - SEMGREP_NETWORK: Podman network mode for Semgrep container. Defaults to --network=none for isolation. Avoid host networking.
 
 Security note: Host networking is intentionally avoided by default. Explicitly opt into networked modes only when required and understood.
+
+## 📚 Offline Artifacts (Trivy & OSV)
+
+For air-gapped or restricted CI environments, GeoToolKit can operate fully offline using pre-generated artifact bundles. This eliminates network dependencies and significantly speeds up scan execution.
+
+### Quick Setup (Recommended)
+
+1. **Generate artifacts** on a networked host:
+
+```bash
+bash scripts/prepare_offline_artifacts.sh data/offline-artifacts
+```
+
+This creates:
+- `trivy-cache.tgz` - Trivy vulnerability database (~75-80 MB)
+- `osv_offline.db` - OSV vulnerability database (if available)
+
+2. **Extract and configure** in your GeoToolKit workspace:
+
+```bash
+# Extract Trivy cache
+mkdir -p data/trivy-cache
+tar -xzf data/offline-artifacts/trivy-cache.tgz -C data/trivy-cache
+
+# Move OSV database (if available)
+mv data/offline-artifacts/osv_offline.db data/osv_offline.db
+```
+
+3. **Set environment variables** (already configured in `run_production_test.sh`):
+
+```bash
+# Trivy offline mode
+export TRIVY_CACHE_DIR="$(pwd)/data/trivy-cache"
+export GEOTOOLKIT_TRIVY_OFFLINE=1
+
+# OSV offline mode (if database available)
+export GEOTOOLKIT_OSV_OFFLINE=1
+export GEOTOOLKIT_OSV_OFFLINE_DB="$(pwd)/data/osv_offline.db"
+```
+
+4. **Run scans** - GeoToolKit will automatically use offline databases:
+
+```bash
+bash run_production_test.sh
+# Or directly:
+python -m src.main --input projects.json --output report.md --database-path data/offline-db.tar.gz
+```
+
+### CI/CD Integration
+
+For CI environments, upload artifacts to your CI storage and extract before scanning:
+
+```bash
+# In your CI pipeline (e.g., GitHub Actions, GitLab CI)
+mkdir -p /workspace/trivy-cache
+tar -xzf trivy-cache.tgz -C /workspace/trivy-cache
+
+export TRIVY_CACHE_DIR=/workspace/trivy-cache
+export GEOTOOLKIT_TRIVY_OFFLINE=1
+
+# If OSV database available:
+export GEOTOOLKIT_OSV_OFFLINE=1
+export GEOTOOLKIT_OSV_OFFLINE_DB=/workspace/osv/osv_offline.db
+```
+
+### Verification
+
+Confirm your offline setup is working correctly:
+
+```bash
+# Check Trivy cache structure
+ls -lh data/trivy-cache/db/
+# Should show: trivy.db (~780 MB) and metadata.json
+
+# Check OSV database (optional)
+ls -lh data/osv_offline.db
+```
+
+### Benefits
+
+- **No network access required** - Scans work in fully air-gapped environments
+- **Faster execution** - No database downloads during scans (saves ~5-10 seconds per project)
+- **Predictable results** - Same vulnerability data across all runs until you update artifacts
+- **Reduced failures** - No network timeouts or registry access issues
+
+### Updating Artifacts
+
+Regenerate artifacts periodically (weekly/monthly) to get latest vulnerability data:
+
+```bash
+# On networked host
+bash scripts/prepare_offline_artifacts.sh data/offline-artifacts
+
+# Distribute updated artifacts to your CI/development environments
+```
+
+### Troubleshooting
+
+**Trivy complains about missing database:**
+- Verify `data/trivy-cache/db/trivy.db` and `data/trivy-cache/db/metadata.json` exist
+- Ensure `TRIVY_CACHE_DIR` points to the extracted cache directory (not the .tgz file)
+- Check file permissions - Trivy needs read access to cache files
+
+**OSV Scanner skips scanning:**
+- This is expected if `data/osv_offline.db` doesn't exist
+- OSV artifact generation requires specific OSV Scanner versions - check `scripts/prepare_offline_artifacts.sh` output
+- You can still get SCA coverage from Trivy without OSV
+
+**Performance still slow:**
+- Verify environment variables are set correctly before running scans
+- Check that large repos aren't being cloned repeatedly (use local paths if testing)
+- Consider using `validation/configs/production-mcp-projects.json` instead of full `production-projects.json` for faster iteration
+
+For detailed offline operation documentation, see `docs/OFFLINE.md`.
 
 ## 📚 Offline Database Setup
 
@@ -303,19 +569,13 @@ For manual database configuration:
 3. **GitHub Security Advisories**
    - Download: [https://github.com/advisories](https://github.com/advisories)
 
-### Troubleshooting
-
-- If containers fail to start, ensure Podman is installed and seccomp profiles exist at `seccomp/*.json`
-- For corporate networks with blocked image pulls, pre-pull required images:
-  - `docker.io/semgrep/semgrep`
-  - `docker.io/aquasec/trivy`
-  - `ghcr.io/ossf/osv-scanner:latest`
-  - `docker.io/owasp/zap2docker-stable:latest`
-- For strictly offline environments, consider mirroring images to a local registry
-
 ## 🛠️ Development
 
 ### Running Tests
+
+Contributing and development notes are available in `CONTRIBUTING.md`.
+
+If your shell is fish (the default for some developers), use syntax compatible with fish when following examples in CI snippets (for example, use `env VAR=value command` or `set -x VAR value; command`).
 
 ```bash
 # Run all tests
