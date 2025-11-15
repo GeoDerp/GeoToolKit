@@ -1,4 +1,6 @@
 name: CI
+permissions:
+  contents: read
 
 on:
   push:
@@ -26,6 +28,8 @@ jobs:
       - name: Run tests
         run: python -m pytest -q
 name: CI
+permissions:
+  contents: read
 
 on:
   push:
@@ -57,6 +61,8 @@ jobs:
       - name: Run tests
         run: python -m pytest -q
 name: Python CI Pipeline
+permissions:
+  contents: read
 
 on:
   push:
