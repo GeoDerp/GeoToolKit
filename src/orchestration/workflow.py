@@ -174,21 +174,27 @@ class Workflow:
                 print("🔍 Running OWASP ZAP (DAST)...")
                 dast_timeout = timeouts.get("dast_seconds") if timeouts else None
                 try:
-                    # Pass the project's own network allowlist (if present) to ZAP
-                    proj_allow = getattr(project, "network_allow_hosts", None)
-                    proj_ip_ranges = getattr(project, "network_allow_ip_ranges", None)
-                    proj_ports = getattr(project, "ports", None)
-                    zap_findings = ZapRunner.run_scan(
-                        str(project.url),
-                        network_allowlist={
-                            "hosts": proj_allow,
-                            "ip_ranges": proj_ip_ranges,
-                            "ports": proj_ports,
-                        },
-                        timeout=dast_timeout,
-                    )
-                    all_findings.extend(zap_findings)
-                    print(f"✅ OWASP ZAP found {len(zap_findings)} findings.")
+                    targets = Workflow._resolve_dast_targets(project)
+                    if not targets:
+                        print("ℹ️  No reachable DAST targets were configured; skipping.")
+                    for target in targets:
+                        # Pass the project's own network allowlist (if present) to ZAP
+                        proj_allow = getattr(project, "network_allow_hosts", None)
+                        proj_ip_ranges = getattr(project, "network_allow_ip_ranges", None)
+                        proj_ports = getattr(project, "ports", None)
+                        zap_findings = ZapRunner.run_scan(
+                            target,
+                            network_allowlist={
+                                "hosts": proj_allow,
+                                "ip_ranges": proj_ip_ranges,
+                                "ports": proj_ports,
+                            },
+                            timeout=dast_timeout,
+                        )
+                        all_findings.extend(zap_findings)
+                        print(
+                            f"✅ OWASP ZAP found {len(zap_findings)} findings against {target}."
+                        )
                 except Exception as e:
                     print(f"❌ OWASP ZAP scan failed: {e}")
             else:
@@ -232,6 +238,11 @@ class Workflow:
         Now also considers if a Dockerfile is present for containerized DAST scanning.
         """
         url_str = str(project.url).lower()
+
+        # If explicit targets are configured, honor them regardless of repository host
+        dast_targets = getattr(project, "dast_targets", []) or []
+        if dast_targets:
+            return True
         
         # If Dockerfile is present and container_capable, enable DAST
         if project.dockerfile_present and project.container_capable:
@@ -265,3 +276,17 @@ class Workflow:
         ):
             return True
         return False
+
+    @staticmethod
+    def _resolve_dast_targets(project: Project) -> list[str]:
+        """Return concrete HTTP(S) URLs for DAST scans if available."""
+        explicit = [t for t in getattr(project, "dast_targets", []) or [] if t]
+        if explicit:
+            return explicit
+
+        url_str = str(project.url).strip()
+        if url_str.startswith(("http://", "https://")) and not any(
+            domain in url_str.lower() for domain in ["github.com", "gitlab.com", "bitbucket.org"]
+        ):
+            return [url_str]
+        return []

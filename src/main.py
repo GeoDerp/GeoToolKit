@@ -173,6 +173,73 @@ def main() -> None:
 
         return sorted(allow_hosts), sorted(allow_ip_ranges), [str(p) for p in ports]
 
+    def _derive_dast_targets(proj: dict[str, Any]) -> list[str]:
+        """Create a list of HTTP(S) targets used for DAST scans.
+
+        Priority:
+        1. Explicit `dast_targets` list in projects.json
+        2. `network_config` + allowlist metadata (defaulting to localhost)
+        3. Empty list (DAST disabled unless project URL is already HTTP)
+        """
+
+        explicit = proj.get("dast_targets")
+        if explicit:
+            if isinstance(explicit, str):
+                explicit = [explicit]
+            return [str(u).strip() for u in explicit if str(u).strip()]
+
+        net_cfg = proj.get("network_config") or {}
+        protocol = (net_cfg.get("protocol") or "http").strip()
+        if not protocol:
+            protocol = "http"
+        health = net_cfg.get("health_endpoint") or "/"
+        if not str(health).startswith("/"):
+            health = f"/{health}"
+
+        ports = [str(p).strip() for p in (net_cfg.get("ports") or proj.get("ports") or []) if str(p).strip()]
+        if not ports:
+            default_port = "443" if protocol == "https" else "80"
+            ports = [default_port]
+
+        host_candidates: list[str] = []
+        # Hosts from explicit allowlist entries
+        for entry in proj.get("network_allow_hosts", []) or []:
+            if isinstance(entry, str) and entry:
+                host_candidates.append(entry.split(":", 1)[0])
+
+        allowed = net_cfg.get("allowed_egress") or {}
+        for key, value in allowed.items():
+            if key == "external_hosts":
+                for host in value or []:
+                    if isinstance(host, str):
+                        host_candidates.append(host)
+                continue
+            host_candidates.append(str(key))
+
+        # Always include localhost fallbacks
+        host_candidates.extend(["127.0.0.1", "localhost"])
+
+        targets: list[str] = []
+        for host in host_candidates:
+            if not host or "/" in host:
+                continue
+            normalized_host = host.strip()
+            if not normalized_host:
+                continue
+            for port in ports:
+                port_str = port or ("443" if protocol == "https" else "80")
+                target = f"{protocol}://{normalized_host}:{port_str}{health}"
+                targets.append(target)
+
+        # Deduplicate while preserving order
+        seen: set[str] = set()
+        deduped: list[str] = []
+        for target in targets:
+            if target not in seen:
+                seen.add(target)
+                deduped.append(target)
+        return deduped
+
     projects: list[Project] = []
     for project_dict in projects_data.get("projects", []):
         try:
@@ -202,9 +269,15 @@ def main() -> None:
                         *[str(x) for x in (allow_ip_ranges or [])],
                     }
                 )
+                if allow_ip_ranges:
+                    project_dict["network_allow_ip_ranges"] = allow_ip_ranges
                 top_ports = project_dict.get("ports", [])
                 if not top_ports:
                     project_dict["ports"] = derived_ports
+                if allow_hosts:
+                    project_dict["network_allow_hosts"] = allow_hosts
+
+            dast_targets = _derive_dast_targets(project_dict)
 
             project = Project(
                 url=project_dict["url"],
@@ -214,6 +287,7 @@ def main() -> None:
                 network_allow_hosts=[str(x) for x in (allow_hosts or [])],
                 network_allow_ip_ranges=[str(x) for x in (allow_ip_ranges or [])],
                 ports=[str(p) for p in (project_dict.get("ports", []) or [])],
+                dast_targets=dast_targets,
             )
             projects.append(project)
         except KeyError as e:

@@ -8,8 +8,8 @@ import json
 import subprocess
 import sys
 import time
-from typing import Any
 from pathlib import Path
+from typing import Any
 
 import requests
 
@@ -80,13 +80,30 @@ class DastTargetManager:
             return False
 
     def build_container(self, project: dict[str, Any]) -> bool:
-        """Build container for a project"""
+        """Build or pull a container image for a project"""
         project_name = project["name"]
+        image_tag = f"{project_name}:test"
+
+        # Allow configs to specify a pre-built image reference
+        image_ref = project.get("image")
+        if image_ref:
+            print(f"🔄 Pulling image {image_ref} for {project_name}")
+            result = self.run_command(["podman", "pull", image_ref])
+            if result.returncode != 0:
+                print(f"❌ Failed to pull {image_ref}: {result.stderr}")
+                return False
+            tag_result = self.run_command(["podman", "tag", image_ref, image_tag])
+            if tag_result.returncode == 0:
+                print(f"✅ Image tagged as {image_tag}")
+                return True
+            print(f"⚠️  Pulled image but failed to tag: {tag_result.stderr}")
+            return False
+
         project_path = project.get("path")
         dockerfile = project.get("dockerfile", "Dockerfile")
 
         if not project_path:
-            print(f"⚠️  Skipping {project_name}: 'path' not defined in config")
+            print(f"⚠️  Skipping {project_name}: neither 'image' nor 'path' provided")
             return False
 
         print(f"🔨 Building container for {project_name} from {project_path}")
@@ -97,7 +114,6 @@ class DastTargetManager:
             print(f"❌ Dockerfile not found at {dockerfile_path}")
             return False
 
-        image_tag = f"{project_name}:test"
         cmd = [
             "podman",
             "build",
@@ -120,10 +136,12 @@ class DastTargetManager:
     def start_container(self, project: dict[str, Any]) -> bool:
         """Start a container for DAST target"""
         project_name = project["name"]
-        primary_port = str(project.get("port", "8080"))
-        ports = [primary_port]
+        network_config = project.get("network_config", {})
+        ports = [str(p) for p in network_config.get("ports", []) if str(p)]
+        if not ports:
+            ports = [str(project.get("port", "8080"))]
 
-        container_name = f"{project_name}-dast-target"
+        container_name = project.get("container_name", f"{project_name}-dast-target")
 
         print(f"🚀 Starting container: {container_name}")
 
@@ -154,7 +172,9 @@ class DastTargetManager:
             print(f"✅ Container started: {container_name}")
 
             # Wait for startup
-            startup_time = project.get("startup_time_seconds", 30)
+            startup_time = network_config.get(
+                "startup_time_seconds", project.get("startup_time_seconds", 30)
+            )
             print(f"⏱️  Waiting {startup_time}s for container startup...")
             time.sleep(startup_time)
 
@@ -166,8 +186,12 @@ class DastTargetManager:
     def check_health(self, project: dict[str, Any]) -> bool:
         """Check if container target is healthy and responding"""
         project_name = project["name"]
-        primary_port = str(project.get("port", "8080"))
-        health_endpoint = project.get("health_endpoint", "/")
+        network_config = project.get("network_config", {})
+        ports = [str(p) for p in network_config.get("ports", []) if str(p)]
+        primary_port = ports[0] if ports else str(project.get("port", "8080"))
+        health_endpoint = network_config.get("health_endpoint") or project.get(
+            "health_endpoint", "/"
+        )
 
         health_url = f"http://127.0.0.1:{primary_port}{health_endpoint}"
 
@@ -212,6 +236,12 @@ class DastTargetManager:
             # Add localhost entries
             for port in allowed_egress.get("localhost", []):
                 allowlist.append(f"127.0.0.1:{port}")
+
+            for host, ports in allowed_egress.items():
+                if host in {"localhost", "external_hosts"}:
+                    continue
+                for port in ports:
+                    allowlist.append(f"{host}:{port}")
 
         return allowlist
 

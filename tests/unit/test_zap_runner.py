@@ -29,6 +29,11 @@ MOCK_ZAP_ALERTS_OUTPUT = """
 }
 """
 
+TEST_ALLOWLIST = {
+    "hosts": ["localhost:8080", "127.0.0.1:8080"],
+    "ports": ["8080"]
+}
+
 
 def mock_requests_get(*args, **kwargs):
     url = args[0]
@@ -66,7 +71,9 @@ def test_zap_runner_success():
         patch.dict("os.environ", {"ZAP_SKIP_CONTAINER": "1"}),
         patch("requests.get", side_effect=mock_requests_get) as mock_requests_get_patch,
     ):
-        findings = ZapRunner.run_scan("http://localhost:8080/target")
+        findings = ZapRunner.run_scan(
+            "http://localhost:8080/target", network_allowlist=TEST_ALLOWLIST
+        )
 
         assert len(findings) == 1
         assert isinstance(findings[0], Finding)
@@ -88,7 +95,9 @@ def test_zap_runner_connection_error(capsys):
             "requests.get", side_effect=requests.exceptions.ConnectionError
         ) as mock_requests_get_patch,
     ):
-        findings = ZapRunner.run_scan("http://localhost:8080/target")
+        findings = ZapRunner.run_scan(
+            "http://localhost:8080/target", network_allowlist=TEST_ALLOWLIST
+        )
 
         assert len(findings) == 0
         captured = capsys.readouterr()
@@ -104,7 +113,9 @@ def test_zap_runner_request_exception(capsys):
             side_effect=requests.exceptions.RequestException("Test Request Error"),
         ) as mock_requests_get_patch,
     ):
-        findings = ZapRunner.run_scan("http://localhost:8080/target")
+        findings = ZapRunner.run_scan(
+            "http://localhost:8080/target", network_allowlist=TEST_ALLOWLIST
+        )
 
         assert len(findings) == 0
         captured = capsys.readouterr()
@@ -125,7 +136,9 @@ def test_zap_runner_json_decode_error(capsys):
             "requests.get", side_effect=mock_invalid_json_response
         ) as mock_requests_get_patch,
     ):
-        findings = ZapRunner.run_scan("http://localhost:8080/target")
+        findings = ZapRunner.run_scan(
+            "http://localhost:8080/target", network_allowlist=TEST_ALLOWLIST
+        )
 
         assert len(findings) == 0
         captured = capsys.readouterr()

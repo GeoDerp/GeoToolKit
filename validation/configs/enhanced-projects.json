@@ -1,0 +1,89 @@
+{
+  "projects": [
+    {
+      "url": "https://github.com/bkimminich/juice-shop",
+      "name": "juice-shop",
+      "language": "JavaScript",
+      "description": "Insecure modern web application for DAST validation",
+      "dockerfile_present": true,
+      "container_capable": true,
+      "network_allow_hosts": [
+        "127.0.0.1:3000",
+        "localhost:3000",
+        "juice-shop-dast-target:3000"
+      ],
+      "network_allow_ip_ranges": ["127.0.0.1/32"],
+      "ports": ["3000"],
+      "dast_targets": ["http://127.0.0.1:3000/"],
+      "network_config": {
+        "ports": ["3000"],
+        "protocol": "http",
+        "health_endpoint": "/",
+        "startup_time_seconds": 30,
+        "allowed_egress": {
+          "localhost": ["3000"],
+          "juice-shop-dast-target": ["3000"],
+          "external_hosts": []
+        }
+      }
+    },
+    {
+      "url": "https://github.com/postmanlabs/httpbin",
+      "name": "httpbin",
+      "language": "Python",
+      "description": "HTTP request & response service",
+      "dockerfile_present": true,
+      "container_capable": true,
+      "network_allow_hosts": [
+        "127.0.0.1:5000",
+        "localhost:5000",
+        "httpbin-dast-target:5000"
+      ],
+      "network_allow_ip_ranges": ["127.0.0.1/32"],
+      "ports": ["5000"],
+      "dast_targets": ["http://127.0.0.1:5000/status/200"],
+      "network_config": {
+        "ports": ["5000"],
+        "protocol": "http",
+        "health_endpoint": "/status/200",
+        "startup_time_seconds": 15,
+        "allowed_egress": {
+          "localhost": ["5000"],
+          "httpbin-dast-target": ["5000"],
+          "external_hosts": []
+        }
+      }
+    },
+    {
+      "url": "https://github.com/gin-gonic/gin",
+      "name": "gin",
+      "language": "Go",
+      "description": "Go HTTP framework",
+      "dockerfile_present": true,
+      "container_capable": true,
+      "network_allow_hosts": [
+        "127.0.0.1:8080",
+        "localhost:8080",
+        "gin-dast-target:8080"
+      ],
+      "network_allow_ip_ranges": ["127.0.0.1/32"],
+      "ports": ["8080"],
+      "dast_targets": ["http://127.0.0.1:8080/ping"],
+      "network_config": {
+        "ports": ["8080"],
+        "protocol": "http",
+        "health_endpoint": "/ping",
+        "startup_time_seconds": 20,
+        "allowed_egress": {
+          "localhost": ["8080"],
+          "gin-dast-target": ["8080"],
+          "external_hosts": []
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "generated": "2025-11-15",
+    "description": "Enhanced sample projects with explicit DAST configuration"
+  }
+}

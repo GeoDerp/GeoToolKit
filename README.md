@@ -222,6 +222,12 @@ python src/main.py \
   --database-path data/offline-db.tar.gz
 ```
 
+The repository ships with curated configs under `validation/configs/`:
+- `enhanced-projects.json` – a trimmed multi-language suite with DAST metadata for quick validation
+- `container-projects.json` – container definitions consumed by `start_dast_targets.py`
+
+Both files include `dast_targets`, allowlists, and health endpoints so the workflow exercises SAST/SCA runners plus ZAP inside the isolated Podman network.
+
 ### Known Limitations
 
 1. **Trivy Offline Database**: The `data/offline-db.tar.gz` contains NVD JSON files but not the SQLite database Trivy expects. Follow `docs/OFFLINE.md` to create a proper Trivy cache.
@@ -339,11 +345,19 @@ The `projects.json` file supports the following format:
       "url": "https://github.com/owner/repo",
       "name": "project-name",
       "language": "Programming Language",
-      "description": "Brief description (optional)"
+      "description": "Brief description (optional)",
+      "dast_targets": ["http://127.0.0.1:3000/"],
+      "network_allow_hosts": ["127.0.0.1:3000", "localhost:3000"],
+      "ports": ["3000"]
     }
   ]
 }
 ```
+
+Key fields for DAST readiness:
+- `dast_targets`: Explicit HTTP/HTTPS endpoints to probe once the application is running (typically on localhost via `start_dast_targets.py`).
+- `network_allow_hosts` / `network_allow_ip_ranges`: Host:port or CIDR entries that explicitly permit egress from the ZAP container; DAST runs fail closed if the target is not included.
+- `ports`: Used to derive default allowlist entries and to stand up local containers for validation.
 
 ### Network Allow-list (for DAST)
 
@@ -364,6 +378,8 @@ python src/main.py \
   --network-allowlist network-allowlist.txt
 ```
 
+GeoToolKit automatically looks for the Podman network defined in `GEOTOOLKIT_DAST_NETWORK` (defaults to `gt-dast-net`). When present, the ZAP container joins this isolated bridge so it can only talk to the explicitly allowed target containers. When scanning localhost services, ZAP falls back to `slirp4netns:allow_host_loopback=true` to keep traffic sandboxed while still reaching `127.0.0.1`.
+
 ### Environment Variables
 
 You can tune container networking and authentication via environment variables. Sensible, secure defaults are used when not set.
@@ -375,6 +391,7 @@ You can tune container networking and authentication via environment variables. 
   - ZAP_IMAGE: Container image to use (default ghcr.io/zaproxy/zaproxy:latest).
   - ZAP_BASE_URL: Connect to an existing ZAP instance instead of starting a container.
   - ZAP_PODMAN_NETWORK: Podman --network value to use (e.g., bridge). Optional.
+  - GEOTOOLKIT_DAST_NETWORK: Name of the isolated Podman network to join when running ZAP (defaults to `gt-dast-net` if it exists; otherwise falls back to loopback-only access).
   - ZAP_PODMAN_PULL: Podman --pull policy: always|missing|never (default missing).
   - ZAP_PODMAN_ARGS: Extra Podman args appended as-is.
   - CONTAINER_HOST_HOSTNAME: Hostname used inside containers to reach the host (default host.containers.internal). Set for environments where the default isn't available.

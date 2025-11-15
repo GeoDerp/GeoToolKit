@@ -41,6 +41,10 @@ class Project(BaseModel):
         default_factory=list,
         description="Optional list of ports relevant for the project's HTTP services (strings to avoid type issues).",
     )
+    dast_targets: list[str] = Field(
+        default_factory=list,
+        description="Optional list of fully-qualified HTTP/HTTPS target URLs to use for DAST scanning.",
+    )
     dockerfile_present: bool = Field(
         default=False,
         description="Indicates whether a Dockerfile is detected in the project root.",

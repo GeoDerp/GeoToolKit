@@ -1,3 +1,4 @@
+import ipaddress
 import json
 import os
 import socket
@@ -24,6 +25,93 @@ class ZapRunner:
     Runs OWASP ZAP scans and parses its output using secure podman containers.
     This runner manages the complete ZAP lifecycle in an isolated container.
     """
+
+    @staticmethod
+    def _normalize_allowlist(
+        network_allowlist: dict | list | None,
+    ) -> tuple[list[str], list[str], list[str]]:
+        hosts: list[str] = []
+        ip_ranges: list[str] = []
+        ports: list[str] = []
+
+        if isinstance(network_allowlist, dict):
+            hosts = [str(h).strip() for h in network_allowlist.get("hosts") or [] if str(h).strip()]
+            ip_ranges = [str(r).strip() for r in network_allowlist.get("ip_ranges") or [] if str(r).strip()]
+            ports = [str(p).strip() for p in network_allowlist.get("ports") or [] if str(p).strip()]
+        elif isinstance(network_allowlist, list):
+            for entry in network_allowlist:
+                entry_str = str(entry).strip()
+                if not entry_str:
+                    continue
+                if "/" in entry_str:
+                    ip_ranges.append(entry_str)
+                else:
+                    hosts.append(entry_str)
+
+        return hosts, ip_ranges, ports
+
+    @staticmethod
+    def _podman_network_exists(name: str) -> bool:
+        if not name:
+            return False
+        try:
+            probe = subprocess.run(
+                ["podman", "network", "exists", name],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            return probe.returncode == 0
+        except Exception:
+            return False
+
+    @staticmethod
+    def _is_target_allowed(
+        target_url: str, hosts: list[str], ip_ranges: list[str], ports: list[str]
+    ) -> bool:
+        """Return True if the target URL satisfies the allowlist requirements."""
+
+        parsed = urlparse(target_url)
+        hostname = parsed.hostname or ""
+        port = parsed.port
+        if port is None:
+            port = 443 if parsed.scheme == "https" else 80
+
+        host_allowed = False if hosts else True
+        for entry in hosts:
+            entry_host = entry
+            entry_port: str | None = None
+            if ":" in entry:
+                entry_host, entry_port = entry.rsplit(":", 1)
+            entry_host = entry_host.strip()
+            if not entry_host:
+                continue
+            if hostname and hostname.lower() == entry_host.lower():
+                if entry_port is None or str(port) == entry_port:
+                    host_allowed = True
+                    break
+
+        if not host_allowed and hostname:
+            # Evaluate CIDR ranges
+            try:
+                ip_obj = ipaddress.ip_address(hostname)
+                for cidr in ip_ranges:
+                    try:
+                        network = ipaddress.ip_network(cidr, strict=False)
+                    except ValueError:
+                        continue
+                    if ip_obj in network:
+                        host_allowed = True
+                        break
+            except ValueError:
+                # Hostname is not an IP address
+                pass
+
+        port_allowed = False if ports else True
+        if ports:
+            port_allowed = str(port) in {str(p) for p in ports}
+
+        return host_allowed and port_allowed
 
     @staticmethod
     def run_scan(
@@ -74,8 +162,22 @@ class ZapRunner:
             except Exception:
                 pass
 
+        # Normalize allowlist early so we can select the appropriate network
+        allow_hosts, allow_ip_ranges, allow_ports = ZapRunner._normalize_allowlist(
+            network_allowlist
+        )
+
         # Optional network selection
         podman_network = os.environ.get("ZAP_PODMAN_NETWORK")
+        if not podman_network:
+            preferred = os.environ.get("GEOTOOLKIT_DAST_NETWORK", "gt-dast-net")
+            if ZapRunner._podman_network_exists(preferred):
+                podman_network = preferred
+            elif any(
+                h.startswith("127.0.0.1") or h.startswith("localhost") for h in allow_hosts
+            ):
+                # Allow host loopback access but keep container isolated from broader network
+                podman_network = "slirp4netns:allow_host_loopback=true"
         if podman_network:
             try:
                 if "--network=none" in base_cmd:
@@ -196,17 +298,6 @@ class ZapRunner:
                 pass
             print(f"Starting ZAP container: {' '.join(podman_command)}")
 
-        # Normalize allowlist
-        allow_hosts: list[str] = []
-        allow_ip_ranges: list[str] = []
-        allow_ports: list[str] = []
-        if isinstance(network_allowlist, dict):
-            allow_hosts = network_allowlist.get("hosts") or []
-            allow_ip_ranges = network_allowlist.get("ip_ranges") or []
-            allow_ports = network_allowlist.get("ports") or []
-        elif isinstance(network_allowlist, list):
-            allow_hosts = network_allowlist
-
         if allow_hosts or allow_ip_ranges or allow_ports:
             try:
                 print("Applying network allowlist entries:")
@@ -218,6 +309,17 @@ class ZapRunner:
                     print(f"  - port: {p}")
             except Exception:
                 pass
+        elif target_url.startswith(("http://", "https://")):
+            raise PermissionError(
+                "Network allowlist is required for DAST scans but none was provided."
+            )
+
+        if not ZapRunner._is_target_allowed(
+            target_url, allow_hosts, allow_ip_ranges, allow_ports
+        ):
+            raise PermissionError(
+                f"Target {target_url} is not included in the provided network allowlist."
+            )
 
         # Pre-check: resolve target hostname to IP(s) and check against allowlist
         try:
@@ -526,8 +628,8 @@ class ZapRunner:
             except requests.exceptions.HTTPError as e:
                 if e.response and e.response.status_code == 404:
                     # Spider add-on might not be available or API changed
-                    print(f"Spider API returned 404 - add-on may not be loaded. Skipping spider phase.")
-                    print(f"You can manually install spider add-on in ZAP or use a different ZAP image.")
+                    print("Spider API returned 404 - add-on may not be loaded. Skipping spider phase.")
+                    print("You can manually install spider add-on in ZAP or use a different ZAP image.")
                     spider_scan_id = None
                 else:
                     raise
@@ -561,6 +663,7 @@ class ZapRunner:
             print(f"Active scanning target: {mapped_target_url}")
             ascan_url = f"{zap_base_url}/JSON/ascan/action/scan/"
             ascan_params = {"url": mapped_target_url, "recurse": "true"}
+            ascan_seconds = int(os.environ.get("ZAP_ASCAN_TIMEOUT", "600"))
             response = requests.get(ascan_url, params=ascan_params, timeout=30)
             response.raise_for_status()
             ascan_id = response.json().get("scan", "0")
