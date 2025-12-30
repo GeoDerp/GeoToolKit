@@ -63,7 +63,9 @@ class Project(BaseModel):
             if v.startswith("/") or Path(v).exists():
                 return v
             # Try to validate as URL - just check format instead of instantiating HttpUrl
-            if v.startswith(("http://", "https://", "git@", "ssh://", "git://", "ftp://")):
+            if v.startswith(
+                ("http://", "https://", "git@", "ssh://", "git://", "ftp://")
+            ):
                 return v
             # If it's not a valid URL and not a local path, it might still be a relative path
             # Log warning for potentially invalid URLs

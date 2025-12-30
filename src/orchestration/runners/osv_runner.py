@@ -32,7 +32,11 @@ class OSVRunner:
         # Default OSV image; unit tests (and many environments) assume the
         # google/ghcr image is the default. Allow explicit override via
         # OSV_IMAGE or OSV_ALT_IMAGE (legacy).
-        osv_image = os.environ.get("OSV_IMAGE") or os.environ.get("OSV_ALT_IMAGE") or "ghcr.io/google/osv-scanner:latest"
+        osv_image = (
+            os.environ.get("OSV_IMAGE")
+            or os.environ.get("OSV_ALT_IMAGE")
+            or "ghcr.io/google/osv-scanner:latest"
+        )
 
         selinux_relabel = os.environ.get("GEOTOOLKIT_SELINUX_RELABEL", "0").lower() in (
             "1",
@@ -52,7 +56,9 @@ class OSVRunner:
         osv_offline_db = os.environ.get("GEOTOOLKIT_OSV_OFFLINE_DB")
 
         if osv_offline and not osv_offline_db:
-            print("OSV offline mode requested and no offline DB provided; skipping OSV-Scanner.")
+            print(
+                "OSV offline mode requested and no offline DB provided; skipping OSV-Scanner."
+            )
             return []
 
         mounts = [src_mount]
@@ -70,7 +76,9 @@ class OSVRunner:
             # different image versions.
             candidate_flags_env = os.environ.get("OSV_IMAGE_OFFLINE_FLAGS")
             if candidate_flags_env:
-                candidates = [f.strip() for f in candidate_flags_env.split(",") if f.strip()]
+                candidates = [
+                    f.strip() for f in candidate_flags_env.split(",") if f.strip()
+                ]
             else:
                 # Common offline-related flags across OSV-Scanner versions
                 candidates = [
@@ -81,7 +89,11 @@ class OSVRunner:
                 ]
 
             # Allow env override to skip probing if desired
-            skip_probe = os.environ.get("OSV_SKIP_HELP_PROBE", "0").lower() in ("1", "true", "yes")
+            skip_probe = os.environ.get("OSV_SKIP_HELP_PROBE", "0").lower() in (
+                "1",
+                "true",
+                "yes",
+            )
             supports_flag = None
             if skip_probe:
                 # If the caller explicitly says to skip probing but provided
@@ -115,7 +127,11 @@ class OSVRunner:
                 # supports_flag may be the exact flag string to pass (e.g. --offline-vulnerabilities)
                 # For flags that require an argument, map known cases to the mounted path.
                 flag = supports_flag
-                if flag in ("--offline-db", "--download-offline-database", "--download-offline-db"):
+                if flag in (
+                    "--offline-db",
+                    "--download-offline-database",
+                    "--download-offline-db",
+                ):
                     inner_args += [flag, "/data/osv-offline-db"]
                 else:
                     # Flags that are boolean toggles that don't take an argument
@@ -124,9 +140,10 @@ class OSVRunner:
                 # If offline was explicitly requested but no supported flag was found,
                 # skip OSV to avoid network calls and inconsistent behavior.
                 if osv_offline:
-                    print("OSV offline requested but no supported offline flag detected in image; skipping OSV to avoid network calls.")
+                    print(
+                        "OSV offline requested but no supported offline flag detected in image; skipping OSV to avoid network calls."
+                    )
                     return []
-            
 
         base_cmd = build_podman_base(mounts)
 
@@ -159,19 +176,31 @@ class OSVRunner:
                 ]
                 low = combined.lower()
                 if any(m in low for m in net_err_markers):
-                    print("OSV-Scanner appears to have failed due to network/DNS errors. Skipping OSV to allow the scan to continue in offline/CI environments.")
-                    print("If you want OSV results in offline CI, run the offline DB preparation script on a networked host and set GEOTOOLKIT_OSV_OFFLINE=1 and GEOTOOLKIT_OSV_OFFLINE_DB=/path/to/db")
+                    print(
+                        "OSV-Scanner appears to have failed due to network/DNS errors. Skipping OSV to allow the scan to continue in offline/CI environments."
+                    )
+                    print(
+                        "If you want OSV results in offline CI, run the offline DB preparation script on a networked host and set GEOTOOLKIT_OSV_OFFLINE=1 and GEOTOOLKIT_OSV_OFFLINE_DB=/path/to/db"
+                    )
                     return []
                 # If OSV explicitly reports the offline DB is unavailable
                 # or that no offline version of the database exists, treat
                 # this as an offline-missing condition and return empty
                 # findings instead of failing the entire run.
-                if "unable to fetch OSV database" in combined or "no offline version of the OSV database" in combined:
-                    print("OSV-Scanner offline DB missing or incomplete; skipping OSV results.")
+                if (
+                    "unable to fetch OSV database" in combined
+                    or "no offline version of the OSV database" in combined
+                ):
+                    print(
+                        "OSV-Scanner offline DB missing or incomplete; skipping OSV results."
+                    )
                     return []
                 print(f"OSV-Scanner initial error (exit {rc}): {err}")
                 # Try alt image fallback similar to previous behavior
-                alt = os.environ.get("OSV_ALT_IMAGE") or "docker.io/google/osv-scanner:latest"
+                alt = (
+                    os.environ.get("OSV_ALT_IMAGE")
+                    or "docker.io/google/osv-scanner:latest"
+                )
                 if alt != osv_image:
                     rc2, out2, err2 = run_with_seccomp_fallback(
                         base_cmd=base_cmd,

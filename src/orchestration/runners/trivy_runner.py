@@ -50,16 +50,22 @@ class TrivyRunner:
 
         # If a host cache dir is provided, mount it into the container so
         # Trivy can use a pre-populated DB and avoid network downloads.
-        trivy_cache_dir = os.environ.get("TRIVY_CACHE_DIR") or os.environ.get("GEOTOOLKIT_TRIVY_CACHE_DIR")
+        trivy_cache_dir = os.environ.get("TRIVY_CACHE_DIR") or os.environ.get(
+            "GEOTOOLKIT_TRIVY_CACHE_DIR"
+        )
 
         trivy_image = os.environ.get("TRIVY_IMAGE", "docker.io/aquasec/trivy")
 
         # If offline mode requested but no cache dir is present, skip Trivy
         # entirely to avoid attempted DB downloads on isolated hosts.
-        trivy_offline_raw = os.environ.get("GEOTOOLKIT_TRIVY_OFFLINE") or os.environ.get("TRIVY_SKIP_UPDATE")
+        trivy_offline_raw = os.environ.get(
+            "GEOTOOLKIT_TRIVY_OFFLINE"
+        ) or os.environ.get("TRIVY_SKIP_UPDATE")
         trivy_offline = str(trivy_offline_raw).lower() in ("1", "true", "yes")
         if trivy_offline and (not trivy_cache_dir):
-            print("Trivy offline mode requested and no cache dir provided; skipping Trivy scan.")
+            print(
+                "Trivy offline mode requested and no cache dir provided; skipping Trivy scan."
+            )
             return []
 
         mounts = [mount_spec]
@@ -89,9 +95,18 @@ class TrivyRunner:
                     db_dir = p / "db"
                     trivy_db = db_dir / "trivy.db"
                     metadata = db_dir / "metadata.json"
-                    if trivy_db.exists() and trivy_db.is_file() and trivy_db.stat().st_size > 1024 and metadata.exists() and metadata.is_file() and metadata.stat().st_size > 0:
+                    if (
+                        trivy_db.exists()
+                        and trivy_db.is_file()
+                        and trivy_db.stat().st_size > 1024
+                        and metadata.exists()
+                        and metadata.is_file()
+                        and metadata.stat().st_size > 0
+                    ):
                         non_empty = True
-                        print(f"Trivy cache present: DB={trivy_db.stat().st_size} bytes")
+                        print(
+                            f"Trivy cache present: DB={trivy_db.stat().st_size} bytes"
+                        )
                     else:
                         # Fallback: any files present
                         for _ in p.rglob("*"):
@@ -103,8 +118,14 @@ class TrivyRunner:
                 non_empty = False
             # If offline is explicitly requested but the cache dir is empty,
             # skip Trivy entirely to avoid attempted DB downloads on offline hosts.
-            if trivy_offline and str(trivy_offline).lower() in ("1", "true", "yes") and not non_empty:
-                print("Trivy offline requested but cache dir appears empty; skipping Trivy to avoid downloads.")
+            if (
+                trivy_offline
+                and str(trivy_offline).lower() in ("1", "true", "yes")
+                and not non_empty
+            ):
+                print(
+                    "Trivy offline requested but cache dir appears empty; skipping Trivy to avoid downloads."
+                )
                 return []
             # Do NOT add --skip-db-update here. Trivy has complex "first run" logic that
             # makes --skip-db-update fail even when a cache exists. Instead:
@@ -143,7 +164,9 @@ class TrivyRunner:
                     # If offline mode explicitly requested and cache appears empty,
                     # avoid attempting fallback runs that will likely also fail.
                     if trivy_offline and (not trivy_cache_dir):
-                        print("Trivy offline requested and cache empty; skipping fallback attempts.")
+                        print(
+                            "Trivy offline requested and cache empty; skipping fallback attempts."
+                        )
                         return []
 
                     # Probe trivy --version (short timeout) to gather hints
@@ -159,7 +182,10 @@ class TrivyRunner:
                     if rc2 == 0:
                         print("Trivy probe succeeded:", out2.strip())
                     else:
-                        print("Trivy probe failed:", err2.strip() if err2 else out2.strip())
+                        print(
+                            "Trivy probe failed:",
+                            err2.strip() if err2 else out2.strip(),
+                        )
 
                     # Try a set of alternate subcommands in order of likelihood
                     alternate_subs = ["filesystem", "fs", "image"]

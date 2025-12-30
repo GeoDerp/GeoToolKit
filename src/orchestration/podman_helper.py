@@ -17,7 +17,9 @@ def _make_log_file(tool: str) -> Path:
     return logs / f"{tool}-{ts}.log"
 
 
-def choose_seccomp_path(target_path: Optional[str], packaged_name: str) -> Optional[Path]:
+def choose_seccomp_path(
+    target_path: Optional[str], packaged_name: str
+) -> Optional[Path]:
     """Return a readable seccomp Path if available, otherwise None.
 
     Priority:
@@ -26,7 +28,9 @@ def choose_seccomp_path(target_path: Optional[str], packaged_name: str) -> Optio
     3. packaged seccomp (only if allowed)
     """
     # Generic environment override naming: <TOOLNAME>_SECCOMP_PATH or TOOL_SECCOMP_PATH
-    env_override = os.environ.get(f"{packaged_name.upper()}_SECCOMP_PATH") or os.environ.get("TRIVY_SECCOMP_PATH")
+    env_override = os.environ.get(
+        f"{packaged_name.upper()}_SECCOMP_PATH"
+    ) or os.environ.get("TRIVY_SECCOMP_PATH")
     if env_override:
         p = Path(env_override)
         if p.exists() and os.access(str(p), os.R_OK):
@@ -34,21 +38,29 @@ def choose_seccomp_path(target_path: Optional[str], packaged_name: str) -> Optio
 
     if target_path:
         try:
-            proj_candidate = Path(target_path) / "seccomp" / f"{packaged_name}-seccomp.json"
+            proj_candidate = (
+                Path(target_path) / "seccomp" / f"{packaged_name}-seccomp.json"
+            )
             if proj_candidate.exists() and os.access(str(proj_candidate), os.R_OK):
                 return proj_candidate
         except Exception:
             pass
 
     # Packaged candidate inside repository
-    packaged_candidate = Path(__file__).parents[2] / "seccomp" / f"{packaged_name}-seccomp.json"
+    packaged_candidate = (
+        Path(__file__).parents[2] / "seccomp" / f"{packaged_name}-seccomp.json"
+    )
     env_allow = os.environ.get("GEOTOOLKIT_ALLOW_PACKAGED_SECCOMP")
     allow_packaged = (
         packaged_candidate.exists()
         if env_allow is None
         else env_allow.lower() in ("1", "true", "yes")
     )
-    if allow_packaged and packaged_candidate.exists() and os.access(str(packaged_candidate), os.R_OK):
+    if (
+        allow_packaged
+        and packaged_candidate.exists()
+        and os.access(str(packaged_candidate), os.R_OK)
+    ):
         return packaged_candidate
 
     return None
@@ -89,7 +101,9 @@ def build_podman_base(mounts: Iterable[str]) -> List[str]:
             else:
                 # Fall back to `getenforce` if available in PATH
                 try:
-                    out = subprocess.run(["getenforce"], capture_output=True, text=True, check=False)
+                    out = subprocess.run(
+                        ["getenforce"], capture_output=True, text=True, check=False
+                    )
                     if out and out.stdout:
                         selinux_relabel = out.stdout.strip().lower() == "enforcing"
                 except Exception:
@@ -109,7 +123,9 @@ def build_podman_base(mounts: Iterable[str]) -> List[str]:
             if len(parts) >= 2:
                 host_candidate = parts[0]
                 # Only translate when host_candidate does not look like a URL or an absolute path
-                if (not host_candidate.startswith("/")) and ("://" not in host_candidate):
+                if (not host_candidate.startswith("/")) and (
+                    "://" not in host_candidate
+                ):
                     abs_host = str((Path.cwd() / host_candidate).resolve())
                     # Reconstruct mount with same container path and any options
                     rest = ":".join(parts[1:])
@@ -177,7 +193,9 @@ def run_with_seccomp_fallback(
             # Podman to report a decoding error. This keeps the behavior
             # deterministic and avoids unnecessary fallback runs.
             packaged_candidate = Path(__file__).parents[2] / "seccomp" / "default.json"
-            if packaged_candidate.exists() and os.access(str(packaged_candidate), os.R_OK):
+            if packaged_candidate.exists() and os.access(
+                str(packaged_candidate), os.R_OK
+            ):
                 seccomp_path = packaged_candidate
             else:
                 seccomp_path = None
@@ -186,7 +204,9 @@ def run_with_seccomp_fallback(
         try:
             # Explicitly pass check=False so callers/tests that expect a
             # 'check' parameter in mocked subprocess.run receive it.
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, check=False)
+            proc = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=timeout, check=False
+            )
             rc = getattr(proc, "returncode", 0) or 0
             out = getattr(proc, "stdout", "") or ""
             err = getattr(proc, "stderr", "") or ""
@@ -209,7 +229,11 @@ def run_with_seccomp_fallback(
 
     # Build command with seccomp if available
     if seccomp_path:
-        cmd = base_cmd + [f"--security-opt=seccomp={str(seccomp_path)}", image] + inner_args
+        cmd = (
+            base_cmd
+            + [f"--security-opt=seccomp={str(seccomp_path)}", image]
+            + inner_args
+        )
         rc, out, err = _run(cmd)
         with open(log_file, "w", encoding="utf-8") as fh:
             fh.write("# Command (with seccomp)\n")

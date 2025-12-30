@@ -34,7 +34,9 @@ def _fallback_secret_scan(project_path_obj: Path) -> list[Finding]:
     for root, _dirs, files in os.walk(project_path_obj):
         for fname in files:
             # Only inspect text-like files
-            if not fname.endswith((".py", ".env", ".cfg", ".ini", ".yaml", ".yml", ".txt", ".json")):
+            if not fname.endswith(
+                (".py", ".env", ".cfg", ".ini", ".yaml", ".yml", ".txt", ".json")
+            ):
                 continue
             fpath = Path(root) / fname
             try:
@@ -124,16 +126,25 @@ class SemgrepRunner:
                 # Prefer a rules file packaged inside the project repository (project-local
                 # `rules/semgrep/default.semgrep.yml`) so that both CLI and MCP runs that
                 # operate against the same cloned repo will use identical rule sets.
-                project_rules = project_path_obj / "rules" / "semgrep" / "default.semgrep.yml"
+                project_rules = (
+                    project_path_obj / "rules" / "semgrep" / "default.semgrep.yml"
+                )
                 if project_rules.exists():
                     config_path = project_rules
                 else:
                     # Fallback to packaged default rules supplied with the GeoToolKit
-                    default_rules = Path(__file__).parents[3] / "rules" / "semgrep" / "default.semgrep.yml"
+                    default_rules = (
+                        Path(__file__).parents[3]
+                        / "rules"
+                        / "semgrep"
+                        / "default.semgrep.yml"
+                    )
                     if default_rules.exists():
                         config_path = default_rules
                     else:
-                        tmpf = tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False)
+                        tmpf = tempfile.NamedTemporaryFile(
+                            mode="w", suffix=".yml", delete=False
+                        )
                         tmpf.write(
                             "rules:\n  - id: 'GT-DEFAULT-1'\n    message: 'Default no-op rule'\n    languages: [python]\n    severity: INFO\n    patterns:\n      - pattern: 'pass'\n"
                         )
@@ -229,7 +240,7 @@ class SemgrepRunner:
         finally:
             # Clean up any temporary config file we created
             try:
-                if 'created_tmp' in locals() and created_tmp:
+                if "created_tmp" in locals() and created_tmp:
                     os.unlink(str(config_path))
             except Exception:
                 pass

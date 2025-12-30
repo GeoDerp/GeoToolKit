@@ -1,4 +1,5 @@
 """Tests for DAST target resolution and allowlist enforcement."""
+
 from src.models.project import Project
 from src.orchestration.runners.zap_runner import ZapRunner
 from src.orchestration.workflow import Workflow
@@ -8,7 +9,7 @@ def test_should_run_dast_when_targets_present() -> None:
     project = Project(
         url="https://github.com/example/repo",
         name="example",
-        dast_targets=["http://127.0.0.1:3000/"]
+        dast_targets=["http://127.0.0.1:3000/"],
     )
 
     assert Workflow._should_run_dast_scan(project) is True

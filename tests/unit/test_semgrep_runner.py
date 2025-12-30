@@ -36,6 +36,7 @@ def test_semgrep_runner_success():
         # Use a side-effect function so additional Path.exists calls
         # (from helpers) don't exhaust a fixed list and cause StopIteration.
         with patch("pathlib.Path.exists") as mock_exists:
+
             def exists_side_effect(*args, **kwargs):
                 # args[0] is the Path instance being checked
                 path_obj = args[0] if args else None
@@ -52,7 +53,9 @@ def test_semgrep_runner_success():
             default_rules_path = str(
                 Path(__file__).parents[2] / "rules" / "semgrep" / "default.semgrep.yml"
             )
-            seccomp_path = str(Path(__file__).parents[2] / "seccomp" / "semgrep-seccomp.json")
+            seccomp_path = str(
+                Path(__file__).parents[2] / "seccomp" / "semgrep-seccomp.json"
+            )
             # Ensure the podman invocation contains the expected key pieces
             called = mock_subprocess_run.call_args[0][0]
             joined = " ".join(map(str, called))
@@ -65,7 +68,11 @@ def test_semgrep_runner_success():
             assert "/rules.yml:ro" in joined
             # Accept the packaged default, a project-local rules file, or
             # a temporary config file created during the run (mounted from /tmp).
-            assert (default_rules_path in joined) or (project_rules in joined) or ("/tmp/" in joined)
+            assert (
+                (default_rules_path in joined)
+                or (project_rules in joined)
+                or ("/tmp/" in joined)
+            )
             # image and semgrep args
             assert "docker.io/semgrep/semgrep" in joined
             assert "semgrep" in joined

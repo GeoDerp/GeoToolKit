@@ -29,10 +29,7 @@ MOCK_ZAP_ALERTS_OUTPUT = """
 }
 """
 
-TEST_ALLOWLIST = {
-    "hosts": ["localhost:8080", "127.0.0.1:8080"],
-    "ports": ["8080"]
-}
+TEST_ALLOWLIST = {"hosts": ["localhost:8080", "127.0.0.1:8080"], "ports": ["8080"]}
 
 
 def mock_requests_get(*args, **kwargs):

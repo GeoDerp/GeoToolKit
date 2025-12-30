@@ -153,7 +153,7 @@ For development:
 
 GeoToolKit has been validated in production-like environments with the following results:
 
-### Scan Results (November 2025)
+### Scan Results
 - **SAST (Semgrep)**: ✅ Fully functional across Python, JavaScript, Go
 - **SCA (Trivy)**: ✅ Functional with graceful offline fallback
 - **SCA (OSV-Scanner)**: ✅ Functional with graceful offline fallback

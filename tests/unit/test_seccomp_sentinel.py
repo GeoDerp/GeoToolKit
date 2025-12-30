@@ -18,7 +18,8 @@ def test_no_dev_null_sentinel(tmp_path, monkeypatch):
 
     def fake_run(cmd, capture_output, text, timeout, check):
         # record the exact command
-        called['cmd'] = cmd
+        called["cmd"] = cmd
+
         # Return a dummy successful result
         class Proc:
             returncode = 0
@@ -27,7 +28,7 @@ def test_no_dev_null_sentinel(tmp_path, monkeypatch):
 
         return Proc()
 
-    monkeypatch.setattr(subprocess, 'run', fake_run)
+    monkeypatch.setattr(subprocess, "run", fake_run)
 
     # Call the helper with seccomp_path=None to simulate missing packaged profiles
     rc, out, err = run_with_seccomp_fallback(
@@ -40,6 +41,8 @@ def test_no_dev_null_sentinel(tmp_path, monkeypatch):
     )
 
     # Ensure subprocess.run was called and that '/dev/null' is not part of the command
-    assert 'cmd' in called, "subprocess.run was not called"
-    joined = " ".join(called['cmd'])
-    assert '/dev/null' not in joined, f"Unexpected sentinel present in podman command: {joined}"
+    assert "cmd" in called, "subprocess.run was not called"
+    joined = " ".join(called["cmd"])
+    assert "/dev/null" not in joined, (
+        f"Unexpected sentinel present in podman command: {joined}"
+    )

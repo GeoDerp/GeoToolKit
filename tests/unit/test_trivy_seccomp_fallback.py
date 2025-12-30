@@ -15,7 +15,9 @@ def test_trivy_fallback_without_seccomp(monkeypatch):
     def fake_run(cmd, capture_output, text, check, timeout):
         called["count"] += 1
         if called["count"] == 1:
-            raise subprocess.CalledProcessError(returncode=125, cmd=cmd, stderr="seccomp error")
+            raise subprocess.CalledProcessError(
+                returncode=125, cmd=cmd, stderr="seccomp error"
+            )
         return mock_result
 
     with patch("subprocess.run") as mock_run:

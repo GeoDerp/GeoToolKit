@@ -57,7 +57,7 @@ class Workflow:
             try:
                 # Detect Dockerfile in local path
                 Workflow._detect_dockerfile(project, Path(project_path_str))
-                
+
                 all_findings.extend(
                     Workflow._run_security_scans(
                         project_path_str, project, network_allowlist, timeouts
@@ -90,10 +90,10 @@ class Workflow:
                     )
                     print(f"Repository cloned successfully to {project_path}")
                     print(f"Repository head: {repo.head.commit.hexsha[:8]}")
-                    
+
                     # Detect Dockerfile presence
                     Workflow._detect_dockerfile(project, project_path)
-                    
+
                     # Run security scans on the cloned repository
                     all_findings.extend(
                         Workflow._run_security_scans(
@@ -180,7 +180,9 @@ class Workflow:
                     for target in targets:
                         # Pass the project's own network allowlist (if present) to ZAP
                         proj_allow = getattr(project, "network_allow_hosts", None)
-                        proj_ip_ranges = getattr(project, "network_allow_ip_ranges", None)
+                        proj_ip_ranges = getattr(
+                            project, "network_allow_ip_ranges", None
+                        )
                         proj_ports = getattr(project, "ports", None)
                         zap_findings = ZapRunner.run_scan(
                             target,
@@ -218,16 +220,23 @@ class Workflow:
         """
         Detect if a Dockerfile exists in the project root and update project metadata.
         """
-        project_path = Path(project_path) if isinstance(project_path, str) else project_path
-        dockerfile_variants = ["Dockerfile", "dockerfile", "Dockerfile.dev", "Dockerfile.prod"]
-        
+        project_path = (
+            Path(project_path) if isinstance(project_path, str) else project_path
+        )
+        dockerfile_variants = [
+            "Dockerfile",
+            "dockerfile",
+            "Dockerfile.dev",
+            "Dockerfile.prod",
+        ]
+
         for variant in dockerfile_variants:
             if (project_path / variant).exists():
                 project.dockerfile_present = True
                 project.container_capable = True
                 print(f"✅ Detected {variant} in project root")
                 return
-        
+
         print("ℹ️  No Dockerfile detected in project root")
 
     @staticmethod
@@ -243,12 +252,14 @@ class Workflow:
         dast_targets = getattr(project, "dast_targets", []) or []
         if dast_targets:
             return True
-        
+
         # If Dockerfile is present and container_capable, enable DAST
         if project.dockerfile_present and project.container_capable:
-            print("ℹ️  Dockerfile detected - DAST scanning enabled for containerized application")
+            print(
+                "ℹ️  Dockerfile detected - DAST scanning enabled for containerized application"
+            )
             return True
-        
+
         # Skip DAST for GitHub/GitLab/etc URLs (source repositories)
         # If the project explicitly provides network/port info pointing at localhost
         # then it's likely the caller started a local container target for DAST
@@ -259,7 +270,10 @@ class Workflow:
             allow_hosts = getattr(project, "network_allow_hosts", []) or []
             # If ports are present and allow_hosts include localhost/127.0.0.1,
             # assume the intent is to run DAST against a running local target.
-            if ports and any(h.startswith("127.0.0.1") or h.startswith("localhost") for h in allow_hosts):
+            if ports and any(
+                h.startswith("127.0.0.1") or h.startswith("localhost")
+                for h in allow_hosts
+            ):
                 return True
         except Exception:
             pass
@@ -286,7 +300,8 @@ class Workflow:
 
         url_str = str(project.url).strip()
         if url_str.startswith(("http://", "https://")) and not any(
-            domain in url_str.lower() for domain in ["github.com", "gitlab.com", "bitbucket.org"]
+            domain in url_str.lower()
+            for domain in ["github.com", "gitlab.com", "bitbucket.org"]
         ):
             return [url_str]
         return []

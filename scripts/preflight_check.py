@@ -4,6 +4,7 @@
 Checks runtime prerequisites (Podman, seccomp files, common images) and exits
 with non-zero status when problems are found.
 """
+
 import shutil
 import subprocess
 import sys
@@ -42,7 +43,9 @@ def check_seccomp_files():
         print("WARNING: Missing seccomp files:")
         for m in missing:
             print(" - ", m)
-        print("You may set GEOTOOLKIT_USE_SECCOMP=0 to disable seccomp or install the seccomp files.")
+        print(
+            "You may set GEOTOOLKIT_USE_SECCOMP=0 to disable seccomp or install the seccomp files."
+        )
         # Not fatal; continue
     else:
         print("Seccomp profiles present")
@@ -59,7 +62,9 @@ def check_images():
             print(f"Image missing (recommended): {img}")
             ok = False
     if not ok:
-        print("Tip: pre-pull images with 'podman pull <image>' to avoid runtime pulls and auth issues.")
+        print(
+            "Tip: pre-pull images with 'podman pull <image>' to avoid runtime pulls and auth issues."
+        )
     return ok
 
 

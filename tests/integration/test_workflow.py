@@ -1,39 +1,27 @@
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
-# Define paths for test artifacts
-TEST_DIR = Path(__file__).parent
-PROJECTS_JSON_PATH = TEST_DIR / "test_projects.json"
-REPORT_MD_PATH = TEST_DIR / "test_report.md"
-DATABASE_PATH = TEST_DIR / "mock_db.tar.gz"
-
-# Mock content for projects.json
-# MOCK_PROJECTS_CONTENT will now be used as a template, and its 'url' fields
-# will be dynamically set within the fixture using temporary paths.
-MOCK_PROJECTS_CONTENT = {
-    "projects": [
-        {
-            "url": "https://github.com/test/mock-repo-1"  # Placeholder, will be overwritten
-        },
-        {
-            "url": "https://github.com/test/mock-repo-2"  # Placeholder, will be overwritten
-        },
-    ]
-}
-
-# No separate network-allowlist file is used; allowlist is embedded in projects.json
-
 
 @pytest.fixture(scope="module")
-def setup_test_environment(tmp_path_factory):  # Add tmp_path_factory as an argument
-    # Create a temporary directory for mock repositories
-    temp_repos_dir = tmp_path_factory.mktemp("mock_repos")
+def setup_test_environment(tmp_path_factory):
+    # Create a temporary directory for the entire test module run
+    test_dir = tmp_path_factory.mktemp("integration_test_env")
+    
+    # Define paths within the temp dir
+    projects_json_path = test_dir / "test_projects.json"
+    report_md_path = test_dir / "test_report.md"
+    database_path = test_dir / "mock_db.tar.gz"
+    
+    # Create mock repos dir
+    repos_dir = test_dir / "mock_repos"
+    repos_dir.mkdir()
 
-    mock_project_1_path = temp_repos_dir / "mock-repo-1"
-    mock_project_2_path = temp_repos_dir / "mock-repo-2"
+    mock_project_1_path = repos_dir / "mock-repo-1"
+    mock_project_2_path = repos_dir / "mock-repo-2"
 
     # Create and initialize mock project directories
     for repo_path in [mock_project_1_path, mock_project_2_path]:
@@ -45,8 +33,7 @@ def setup_test_environment(tmp_path_factory):  # Add tmp_path_factory as an argu
                 "SECRET_KEY = 'supersecret'\nDATABASE_URL = 'sqlite:///test.db'"
             )
 
-    # Create a local copy of MOCK_PROJECTS_CONTENT and update URLs
-    # Embed network allowlist details and ports directly in projects.json
+    # Create projects.json content
     local_projects_content = {
         "projects": [
             {
@@ -64,62 +51,48 @@ def setup_test_environment(tmp_path_factory):  # Add tmp_path_factory as an argu
         ]
     }
 
-    with open(PROJECTS_JSON_PATH, "w") as f:
-        json.dump(local_projects_content, f)  # Use the local content
+    with open(projects_json_path, "w") as f:
+        json.dump(local_projects_content, f)
 
     # Create mock database file (empty for now)
-    DATABASE_PATH.touch()
+    database_path.touch()
 
-    # No network-allowlist file needed; configuration is embedded above
-
-    yield  # Run tests
-
-    # Clean up after tests
-    PROJECTS_JSON_PATH.unlink(missing_ok=True)
-    REPORT_MD_PATH.unlink(missing_ok=True)
-    DATABASE_PATH.unlink(missing_ok=True)
-    # No allowlist file to clean up
-    # tmp_path_factory automatically cleans up the temporary directory (temp_repos_dir)
-    # and its contents, so explicit shutil.rmtree calls for mock_project_1_path
-    # and mock_project_2_path are no longer needed.
+    # Return the paths needed for the test
+    return {
+        "projects_json": projects_json_path,
+        "report_md": report_md_path,
+        "database": database_path
+    }
 
 
+@pytest.mark.integration
+@pytest.mark.slow
 def test_main_workflow_integration(setup_test_environment):
+    env = setup_test_environment
+    
     # Construct the command to run src/main.py
-    # Find the project root dynamically
-    # From tests/integration/test_workflow.py, go up 2 levels to reach the project root (GeoToolKit)
     project_root = Path(__file__).parents[2]
-
-    python_executable = project_root / ".venv" / "bin" / "python"
+    python_executable = sys.executable
     main_script = project_root / "src" / "main.py"
 
-    # Ensure the python executable for the virtual environment exists
-    if not python_executable.exists():
-        pytest.fail(
-            f"Python executable for virtual environment not found at {python_executable}. "
-            f"Please ensure the virtual environment is created and activated, or adjust the path."
-        )
-
-    # Ensure the main script exists
     if not main_script.exists():
-        pytest.fail(
-            f"Main script not found at {main_script}. Please check the project structure."
-        )
+        pytest.fail(f"Main script not found at {main_script}")
 
     command = [
         str(python_executable),
         str(main_script),
         "--input",
-        str(PROJECTS_JSON_PATH),
+        str(env["projects_json"]),
         "--output",
-        str(REPORT_MD_PATH),
+        str(env["report_md"]),
         "--database-path",
-        str(DATABASE_PATH),
+        str(env["database"]),
     ]
 
     print(f"Running command: {' '.join(command)}")
 
     try:
+        # Run the command
         result = subprocess.run(command, capture_output=True, text=True, check=True)
         print("STDOUT:", result.stdout)
         print("STDERR:", result.stderr)
@@ -129,18 +102,14 @@ def test_main_workflow_integration(setup_test_environment):
         print("STDERR:", e.stderr)
         pytest.fail(f"Integration test failed: {e}")
 
-    # Assert that the report file was created
-    assert REPORT_MD_PATH.exists()
-    assert REPORT_MD_PATH.stat().st_size > 0
+    # Assertions
+    report_path = env["report_md"]
+    assert report_path.exists()
+    assert report_path.stat().st_size > 0
 
-    # Basic content assertion (can be expanded)
-    report_content = REPORT_MD_PATH.read_text()
+    report_content = report_path.read_text()
     assert "# Scan Report for GeoToolKit" in report_content
     assert "**Total Projects Scanned**: 2" in report_content
-    assert (
-        "**Total Findings**: 1" in report_content
-    )  # Expecting one finding from the mock repo
+    assert "**Total Findings**: 1" in report_content
     assert "Project: mock-repo-1" in report_content
     assert "Project: mock-repo-2" in report_content
-    # Note: Due to container runtime issues, the scanners don't actually find security issues
-    # but the workflow still runs successfully and generates reports

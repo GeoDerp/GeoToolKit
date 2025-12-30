@@ -35,9 +35,21 @@ class ZapRunner:
         ports: list[str] = []
 
         if isinstance(network_allowlist, dict):
-            hosts = [str(h).strip() for h in network_allowlist.get("hosts") or [] if str(h).strip()]
-            ip_ranges = [str(r).strip() for r in network_allowlist.get("ip_ranges") or [] if str(r).strip()]
-            ports = [str(p).strip() for p in network_allowlist.get("ports") or [] if str(p).strip()]
+            hosts = [
+                str(h).strip()
+                for h in network_allowlist.get("hosts") or []
+                if str(h).strip()
+            ]
+            ip_ranges = [
+                str(r).strip()
+                for r in network_allowlist.get("ip_ranges") or []
+                if str(r).strip()
+            ]
+            ports = [
+                str(p).strip()
+                for p in network_allowlist.get("ports") or []
+                if str(p).strip()
+            ]
         elif isinstance(network_allowlist, list):
             for entry in network_allowlist:
                 entry_str = str(entry).strip()
@@ -174,7 +186,8 @@ class ZapRunner:
             if ZapRunner._podman_network_exists(preferred):
                 podman_network = preferred
             elif any(
-                h.startswith("127.0.0.1") or h.startswith("localhost") for h in allow_hosts
+                h.startswith("127.0.0.1") or h.startswith("localhost")
+                for h in allow_hosts
             ):
                 # Allow host loopback access but keep container isolated from broader network
                 podman_network = "slirp4netns:allow_host_loopback=true"
@@ -595,7 +608,7 @@ class ZapRunner:
 
             # Spider the target URL
             print(f"Spidering target: {mapped_target_url}")
-            
+
             # Check if spider add-on is available before attempting scan
             try:
                 components_response = requests.get(
@@ -604,7 +617,7 @@ class ZapRunner:
                 components_response.raise_for_status()
                 components = components_response.json()
                 has_spider = any(
-                    "spider" in str(comp).lower() 
+                    "spider" in str(comp).lower()
                     for comp in components.get("componentList", [])
                 )
                 if not has_spider:
@@ -612,7 +625,7 @@ class ZapRunner:
                     print("Available components:", components.get("componentList", []))
             except Exception as e:
                 print(f"Warning: Could not check ZAP components: {e}")
-            
+
             # Try to start spider scan
             spider_url = f"{zap_base_url}/JSON/spider/action/scan/"
             spider_params = {
@@ -620,7 +633,7 @@ class ZapRunner:
                 "maxChildren": "10",
                 "recurse": "true",
             }
-            
+
             try:
                 response = requests.get(spider_url, params=spider_params, timeout=30)
                 response.raise_for_status()
@@ -628,19 +641,25 @@ class ZapRunner:
             except requests.exceptions.HTTPError as e:
                 if e.response and e.response.status_code == 404:
                     # Spider add-on might not be available or API changed
-                    print("Spider API returned 404 - add-on may not be loaded. Skipping spider phase.")
-                    print("You can manually install spider add-on in ZAP or use a different ZAP image.")
+                    print(
+                        "Spider API returned 404 - add-on may not be loaded. Skipping spider phase."
+                    )
+                    print(
+                        "You can manually install spider add-on in ZAP or use a different ZAP image."
+                    )
                     spider_scan_id = None
                 else:
                     raise
-            
+
             # If spider started successfully, wait for completion
             if spider_scan_id is not None:
                 spider_seconds = int(os.environ.get("ZAP_SPIDER_TIMEOUT", "120"))
                 spider_timeout = time.time() + spider_seconds
                 for _attempt in range(max(1, spider_seconds // 1)):
                     if time.time() > spider_timeout:
-                        print("Spider scan timeout reached, continuing with active scan")
+                        print(
+                            "Spider scan timeout reached, continuing with active scan"
+                        )
                         break
 
                     status_response = requests.get(

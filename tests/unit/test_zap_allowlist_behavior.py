@@ -35,8 +35,12 @@ def test_zap_allowlist_logs_and_proceeds(monkeypatch, capsys):
     # the allowlist printing path is hit. The runner should still proceed.
     allowlist = ["localhost"]
 
-    findings = ZapRunner.run_scan("http://localhost:1234", network_allowlist=allowlist, timeout=1)
+    findings = ZapRunner.run_scan(
+        "http://localhost:1234", network_allowlist=allowlist, timeout=1
+    )
     # The runner returns a list even when no alerts are found
     assert isinstance(findings, list)
     captured = capsys.readouterr()
-    assert "matched allowlist" in captured.out or "allowing network access" in captured.out
+    assert (
+        "matched allowlist" in captured.out or "allowing network access" in captured.out
+    )

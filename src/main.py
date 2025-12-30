@@ -196,7 +196,11 @@ def main() -> None:
         if not str(health).startswith("/"):
             health = f"/{health}"
 
-        ports = [str(p).strip() for p in (net_cfg.get("ports") or proj.get("ports") or []) if str(p).strip()]
+        ports = [
+            str(p).strip()
+            for p in (net_cfg.get("ports") or proj.get("ports") or [])
+            if str(p).strip()
+        ]
         if not ports:
             default_port = "443" if protocol == "https" else "80"
             ports = [default_port]

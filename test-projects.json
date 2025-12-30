@@ -6,7 +6,7 @@
   },
   "projects": [
     {
-      "url": "/var/home/geo/Documents/GeoToolKit/test-scan",
+      "url": "test-scan",
       "name": "test-scan",
       "language": "Python",
       "description": "Local test project with vulnerable code",

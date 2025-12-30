@@ -19,10 +19,18 @@ def test_prepare_script_creates_trivy_cache(tmp_path: Path):
 
     outdir = tmp_path / "offline-artifacts"
     outdir.mkdir()
-    script = Path(__file__).resolve().parents[2] / "scripts" / "prepare_offline_artifacts.sh"
+    script = (
+        Path(__file__).resolve().parents[2] / "scripts" / "prepare_offline_artifacts.sh"
+    )
     assert script.exists(), f"prepare script not found at {script}"
 
-    proc = subprocess.run([str(script), str(outdir)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=600)
+    proc = subprocess.run(
+        [str(script), str(outdir)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        timeout=600,
+    )
     print(proc.stdout)
     assert proc.returncode == 0
 

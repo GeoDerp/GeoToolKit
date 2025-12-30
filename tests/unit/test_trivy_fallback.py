@@ -25,9 +25,14 @@ class FakeCallSequence:
 
 def test_trivy_fallback(monkeypatch, tmp_path):
     seq = FakeCallSequence()
-    monkeypatch.setattr("src.orchestration.runners.trivy_runner.run_with_seccomp_fallback", seq)
+    monkeypatch.setattr(
+        "src.orchestration.runners.trivy_runner.run_with_seccomp_fallback", seq
+    )
     # Mock parse to ensure it is called and returns []
-    monkeypatch.setattr("src.orchestration.runners.trivy_runner.OutputParser.parse_trivy_json", lambda s: [])
+    monkeypatch.setattr(
+        "src.orchestration.runners.trivy_runner.OutputParser.parse_trivy_json",
+        lambda s: [],
+    )
 
     res = TrivyRunner.run_scan(str(tmp_path))
     assert isinstance(res, list)
